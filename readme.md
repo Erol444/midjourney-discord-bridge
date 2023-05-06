@@ -8,7 +8,7 @@ MidjourneyDiscordBridge is a Node.js library for interacting with the [Midjourne
 
 ## Demo
 
-![Demo GIF](https://user-images.githubusercontent.com/18037362/236650595-67299740-f799-4ad1-9e0d-79acae54a880.gif)
+![Demo GIF](https://user-images.githubusercontent.com/18037362/236650796-afaefb1f-af36-4185-a1f9-29f7106c39e2.gif)
 
 ## Usage
 
