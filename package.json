@@ -1,5 +1,5 @@
 {
-  "name": "midjourney-discord-api",
+  "name": "midjourney-discord-bridge",
   "version": "1.0.0",
   "description": "Library that interacts with Midjourney's Discord Bot",
   "main": "index.js",
@@ -13,6 +13,7 @@
     "generative",
     "ai"
   ],
+  "homepage": "https://github.com/Erol444/midjourney-discord-bridge",
   "author": "Erol444",
   "license": "ISC",
   "dependencies": {

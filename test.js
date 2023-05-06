@@ -1,4 +1,4 @@
-const { MidjourneyDiscordApi } = require("midjourney-discord-api");
+const { MidjourneyDiscordBridge } = require("midjourney-discord-bridge");
 
 const axios = require("axios");
 const sharp = require('sharp');
@@ -8,7 +8,7 @@ function img_update(img_url, progress) {
 }
 
 async function main() {
-    const mj = new MidjourneyDiscordApi(discord_token='my_discord_token');
+    const mj = new MidjourneyDiscordBridge(discord_token='my_discord_token');
 
     const img_url = await mj.generateImage(
       'Tiny astronaut standing on a tiny round moon, cartoon',

@@ -1,7 +1,7 @@
 const axios = require("axios");
 const Discordie = require("discordie");
 
-class MidjourneyDiscordApi {
+class MidjourneyDiscordBridge {
   constructor(discord_token) {
     /**
      * @param {string} discord_token - Your discord token that has access to Midjourney bot
@@ -199,5 +199,5 @@ class MidjourneyDiscordApi {
 }
 
 module.exports = {
-  MidjourneyDiscordApi,
+  MidjourneyDiscordBridge,
 };
