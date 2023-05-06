@@ -6,19 +6,15 @@ MidjourneyDiscordBridge is a Node.js library for interacting with the [Midjourne
 
 **Note:** This unofficial API library is not endorsed by Midjourney or Discord and violates their Terms of Service. Use it at your own risk; the creator assumes no liability for any consequences. Please adhere to each platform's ToS and exercise caution with unofficial resources.
 
-## Installation
+## Demo
 
-To install the MidjourneyDiscordBridge library, run the following command:
-
-```
-npm install midjourney-discord-bridge
-```
+![Demo GIF](https://user-images.githubusercontent.com/18037362/236650595-67299740-f799-4ad1-9e0d-79acae54a880.gif)
 
 ## Usage
 
 Here's a simple example of how to use MidjourneyDiscordBridge in your Node.js application:
 
-```
+```javascript
 const { MidjourneyDiscordBridge } = require("midjourney-discord-bridge");
 
 const axios = require("axios");
@@ -46,9 +42,13 @@ async function main() {
 main();
 ```
 
-## Demo
+## Installation
 
-![Demo GIF](https://user-images.githubusercontent.com/18037362/236650595-67299740-f799-4ad1-9e0d-79acae54a880.gif)
+To install the MidjourneyDiscordBridge library, run the following command:
+
+```bash
+npm install midjourney-discord-bridge
+```
 
 ## Dependencies
 
