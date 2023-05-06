@@ -1,0 +1,22 @@
+{
+  "name": "midjourney-discord-api",
+  "version": "1.0.0",
+  "description": "Library that interacts with Midjourney's Discord Bot",
+  "main": "index.js",
+  "keywords": [
+    "midjourney",
+    "discord",
+    "bot",
+    "api",
+    "image",
+    "generation",
+    "generative",
+    "ai"
+  ],
+  "author": "Erol444",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.4.0",
+    "discordie": "^0.11.0"
+  }
+}
