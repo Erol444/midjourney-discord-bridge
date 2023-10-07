@@ -2,13 +2,14 @@ const axios = require("axios");
 const Discordie = require("discordie");
 
 class MidjourneyDiscordBridge {
-    constructor(discord_token) {
+    constructor(discord_token, guild_id ,channel_id) {
         /**
          * @param {string} discord_token - Your discord token that has access to Midjourney bot
          */
 
         this.MIDJOURNEY_BOT_ID = "936929561302675456";
-        this.MIDJOURNEY_BOT_CHANNEL = "1159893716543225896";
+        this.MIDJOURNEY_BOT_CHANNEL = channel_id;
+        this.GUILD_ID = guild_id;
         this.discord_token = discord_token;
 
         this.client = new Discordie();
@@ -149,8 +150,8 @@ class MidjourneyDiscordBridge {
         console.log("Variation image:", imageUUID);
         const payload = {
             type: 3,
-            guild_id: "1159893559839830087",
-            channel_id: "1159893716543225896",
+            guild_id: this.GUILD_ID,
+            channel_id: this.MIDJOURNEY_BOT_CHANNEL,
             message_flags: 0,
             message_id: obj.id,
             application_id: "936929561302675456",
@@ -213,8 +214,8 @@ class MidjourneyDiscordBridge {
         console.log("Zoom out image:", imageUUID);
         const payload = {
             type: 3,
-            guild_id: "1159893559839830087",
-            channel_id: "1159893716543225896",
+            guild_id: this.GUILD_ID,
+            channel_id: this.MIDJOURNEY_BOT_CHANNEL,
             message_flags: 0,
             message_id: obj.id,
             application_id: "936929561302675456",
@@ -272,8 +273,8 @@ class MidjourneyDiscordBridge {
         console.log("Upscaling image:", imageUUID);
         const payload = {
             type: 3,
-            guild_id: "1159893559839830087",
-            channel_id: "1159893716543225896",
+            guild_id: this.GUILD_ID,
+            channel_id: this.MIDJOURNEY_BOT_CHANNEL,
             message_flags: 0,
             message_id: obj.id,
             application_id: "936929561302675456",
@@ -334,8 +335,8 @@ class MidjourneyDiscordBridge {
         const payload = {
             type: 2,
             application_id: "936929561302675456",
-            guild_id: "1159893559839830087",
-            channel_id: "1159893716543225896",
+            guild_id: this.GUILD_ID,
+            channel_id: this.MIDJOURNEY_BOT_CHANNEL,
             session_id: "78605fe0e6ca120b971b0325ecc74327",
             data: {
                 version: "1118961510123847772",
