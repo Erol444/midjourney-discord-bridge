@@ -101,6 +101,7 @@ class MidjourneyDiscordBridge {
         const matches = regex.exec(img.url);
         const uuid = matches[0];
         img.uuid = uuid;
+        //if(img.uuid = "ephemeral-message") console.log(JSON.stringify(e));
         img.id = e.message.id;
 
         let prompt_msg = e.message.content.substring(2); // Remove first two characters **
