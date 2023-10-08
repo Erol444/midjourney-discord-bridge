@@ -19,6 +19,8 @@ class MidjourneyDiscordBridge {
 
         this.session_id = "55c4bd6c10df4a06c8c9109f96dbddd3";
 
+        this.message_flags = 0;
+
         this.loggedIn = false;
         this.loginResolver = null;
         this.loginPromise = new Promise((resolve) => {
@@ -110,9 +112,11 @@ class MidjourneyDiscordBridge {
         let uuid = "";
         if(matches[0] == "ephemeral-attachments"){
             uuid = img.url.substring(img.url.indexOf(".png?")-36,img.url.indexOf(".png?"));
+            this.message_flags = 64;
             //console.log("UUID from substring:", uuid);
         }else{
             uuid = matches[0];
+            this.message_flags = 0;
             //console.log("UUID from regex:", uuid);
         }
         //let uuid = matches[0]=="ephemeral-attachments"?matches[2]:matches[0];
@@ -178,7 +182,7 @@ class MidjourneyDiscordBridge {
             type: 3,
             guild_id: this.GUILD_ID,
             channel_id: this.MIDJOURNEY_BOT_CHANNEL,
-            message_flags: 64,
+            message_flags: this.message_flags,
             message_id: obj.id,
             application_id: "936929561302675456",
             session_id: this.session_id,
@@ -237,7 +241,7 @@ class MidjourneyDiscordBridge {
             type: 3,
             guild_id: this.GUILD_ID,
             channel_id: this.MIDJOURNEY_BOT_CHANNEL,
-            message_flags: 0,
+            message_flags: this.message_flags,
             message_id: obj.id,
             application_id: "936929561302675456",
             session_id: this.session_id,
@@ -302,7 +306,7 @@ class MidjourneyDiscordBridge {
             type: 3,
             guild_id: this.GUILD_ID,
             channel_id: this.MIDJOURNEY_BOT_CHANNEL,
-            message_flags: 0,
+            message_flags: this.message_flags,
             message_id: obj.id,
             application_id: "936929561302675456",
             session_id: this.session_id,
@@ -362,7 +366,7 @@ class MidjourneyDiscordBridge {
             type: 3,
             guild_id: this.GUILD_ID,
             channel_id: this.MIDJOURNEY_BOT_CHANNEL,
-            message_flags: 0,
+            message_flags: this.message_flags,
             message_id: obj.id,
             application_id: "936929561302675456",
             session_id: this.session_id,
