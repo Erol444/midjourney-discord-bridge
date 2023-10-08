@@ -17,6 +17,8 @@ class MidjourneyDiscordBridge {
         
         this.queue = [];
 
+        this.session_id = "55c4bd6c10df4a06c8c9109f96dbddd3";
+
         this.loggedIn = false;
         this.loginResolver = null;
         this.loginPromise = new Promise((resolve) => {
@@ -80,8 +82,13 @@ class MidjourneyDiscordBridge {
         /**
          * Handle a new message from Discord.
          */
+        
+        
         if(e == null) return;
+        if(e.socket == null) return;
+        this.session_id = e.socket.sessionId;
         if(e.message == null) return;
+        //console.log(e.message.attachments);
         if(e.message.content == null) return;
         if(e.message.attachments == null) return;
         if(e.message.author == null) return;
@@ -99,9 +106,17 @@ class MidjourneyDiscordBridge {
         const regexString = "([A-Za-z0-9]+(-[A-Za-z0-9]+)+)";
         const regex = new RegExp(regexString);
         const matches = regex.exec(img.url);
-        const uuid = matches[0];
+        //console.log("Matches:", matches);
+        let uuid = "";
+        if(matches[0] == "ephemeral-attachments"){
+            uuid = img.url.substring(img.url.indexOf(".png?")-36,img.url.indexOf(".png?"));
+            //console.log("UUID from substring:", uuid);
+        }else{
+            uuid = matches[0];
+            //console.log("UUID from regex:", uuid);
+        }
+        //let uuid = matches[0]=="ephemeral-attachments"?matches[2]:matches[0];
         img.uuid = uuid;
-        //if(img.uuid = "ephemeral-message") console.log(JSON.stringify(e));
         img.id = e.message.id;
 
         let prompt_msg = e.message.content.substring(2); // Remove first two characters **
@@ -166,7 +181,7 @@ class MidjourneyDiscordBridge {
             message_flags: 64,
             message_id: obj.id,
             application_id: "936929561302675456",
-            session_id: "55c4bd6c10df4a06c8c9109f96dbddd3",
+            session_id: this.session_id,
             data: {
                 component_type: 2,
                 custom_id: "MJ::CancelJob::ByJobid::" + imageUUID,
@@ -225,7 +240,7 @@ class MidjourneyDiscordBridge {
             message_flags: 0,
             message_id: obj.id,
             application_id: "936929561302675456",
-            session_id: "55c4bd6c10df4a06c8c9109f96dbddd3",
+            session_id: this.session_id,
             data: {
                 component_type: 2,
                 custom_id: "MJ::JOB::variation::" + selectedImage + "::" + imageUUID,
@@ -290,7 +305,7 @@ class MidjourneyDiscordBridge {
             message_flags: 0,
             message_id: obj.id,
             application_id: "936929561302675456",
-            session_id: "55c4bd6c10df4a06c8c9109f96dbddd3",
+            session_id: this.session_id,
             data: {
                 component_type: 2,
                 custom_id: "MJ::Outpaint::50::1::"+ obj.uuid +"::SOLO"
@@ -350,7 +365,7 @@ class MidjourneyDiscordBridge {
             message_flags: 0,
             message_id: obj.id,
             application_id: "936929561302675456",
-            session_id: "55c4bd6c10df4a06c8c9109f96dbddd3",
+            session_id: this.session_id,
             data: {
                 component_type: 2,
                 custom_id: "MJ::JOB::upsample::" + selectedImage + "::" + imageUUID,
@@ -409,7 +424,7 @@ class MidjourneyDiscordBridge {
             application_id: "936929561302675456",
             guild_id: this.GUILD_ID,
             channel_id: this.MIDJOURNEY_BOT_CHANNEL,
-            session_id: "78605fe0e6ca120b971b0325ecc74327",
+            session_id: this.session_id,
             data: {
                 version: "1118961510123847772",
                 id: "938956540159881230",
