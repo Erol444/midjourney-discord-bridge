@@ -124,7 +124,7 @@ class MidjourneyDiscordBridge {
 
         let index = this._findItem(prompt_msg);
         if (index == null) {
-            console.log("No item found for this prompt!", prompt_msg);
+            //console.log("No item found for this prompt!", prompt_msg);
             return;
         }
 
@@ -138,7 +138,7 @@ class MidjourneyDiscordBridge {
             return;
         } else {
             // Image generation finished!
-            console.log("Image generation completed:", img.url);
+            //console.log("Image generation completed:", img.url);
             item.resolve(img);
             //debugger;
             this.queue.pop(index);
