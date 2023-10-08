@@ -14,6 +14,7 @@ class MidjourneyDiscordBridge {
 
         this.client = new Discordie();
         const Events = Discordie.Events;
+        
         this.queue = [];
 
         this.loggedIn = false;
@@ -129,13 +130,77 @@ class MidjourneyDiscordBridge {
         return new Promise((resolve) => {    
             obj.resolve = resolve;
             //console.log("Promise created: " + JSON.stringify(obj));
+            // this.timeOut = setTimeout(async () => {
+            //     //console.log("Timeout called");
+            //     await this.cancelJob(this.currentJobObj);
+            //     resolve(null);
+            //     this.timeOut.unref();
+            // }, 120 * 1000);
         });
     }
     async waitTwoSeconds() {
         await new Promise(resolve => setTimeout(resolve, 2000));
     };
 
+    async cancelJob() {
+        let obj;
+        if(this.currentJobObj != null) {
+            obj = this.currentJobObj;
+        }else {
+            return;
+        }
+        if(!this.loggedIn) {
+            await this.loginPromise;
+        }
+        let imageUUID = obj.uuid;
+        console.log("Cancelling job for image:", imageUUID);
+        const payload = {
+            type: 3,
+            guild_id: this.GUILD_ID,
+            channel_id: this.MIDJOURNEY_BOT_CHANNEL,
+            message_flags: 64,
+            message_id: obj.id,
+            application_id: "936929561302675456",
+            session_id: "55c4bd6c10df4a06c8c9109f96dbddd3",
+            data: {
+                component_type: 2,
+                custom_id: "MJ::CancelJob::ByJobid::" + imageUUID,
+            }
+        };
+
+        const headers = {
+            authorization: this.discord_token,
+        };
+
+        try {
+            const response = await axios.post(
+                "https://discord.com/api/v9/interactions",
+                payload,
+                { headers }
+            );
+            console.log(response.data);
+        } catch (error) {
+            if (error.response) {
+                // The request was made, and the server responded with a status code that falls out of the range of 2xx
+                console.error(
+                    "Error response:",
+                    error.response.status,
+                    error.response.data
+                );
+            } else if (error.request) {
+                // The request was made, but no response was received
+                console.error("No response received:", error.request);
+            } else {
+                // Something happened in setting up the request that triggered an Error
+                console.error("Error during request setup:", error.message);
+            }
+        }
+
+        return;
+    }
+
     async variation(obj, selectedImage, prompt) {
+        this.currentJobObj = obj;
         await this.waitTwoSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
@@ -200,6 +265,7 @@ class MidjourneyDiscordBridge {
     }
 
     async zoomOut(obj, prompt) {
+        this.currentJobObj = obj;
         await this.waitTwoSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
@@ -263,6 +329,7 @@ class MidjourneyDiscordBridge {
         return ret;
     }
     async upscaleImage(obj, imageNum, prompt) {
+        this.currentJobObj = obj;
         console.log("Waiting for two seconds then calling for updscaled image...");
         await this.waitTwoSeconds();
         if (!this.loggedIn) {
