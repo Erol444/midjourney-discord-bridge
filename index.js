@@ -31,7 +31,11 @@ class MidjourneyDiscordBridge {
             if (content === "do") doCommand(e);
             if (content === "undo") undoCommand(e);
 
-            if (e.message.content.endsWith("(Waiting to start)")) return; // Ignore this message
+            if (e.message.content.endsWith("(Waiting to start)")) {
+                console.log("Image generation waiting to start");
+                return; // Ignore this message
+            }
+            
 
             this._newDiscordMsg(e, false);
         });
