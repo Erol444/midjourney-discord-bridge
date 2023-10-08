@@ -19,7 +19,7 @@ class MidjourneyDiscordBridge {
 
         this.session_id = "55c4bd6c10df4a06c8c9109f96dbddd3";
 
-        this.message_flags = 0;
+        //this.message_flags = 0;
 
         this.loggedIn = false;
         this.loginResolver = null;
@@ -98,29 +98,43 @@ class MidjourneyDiscordBridge {
         if (e.message.author.id != this.MIDJOURNEY_BOT_ID) {
             return;
         }
-        //console.log("Message is from Midjourney bot");
-
+        if(e.data!=null){
+            if(e.data.interaction!=null){
+                if(e.data.interaction.name == "info"){
+                    //console.log("Info message received");
+                    let obj = this.queue[0];
+                    if(obj == null) return;
+                    if(obj.prompt != "info") return;
+                    //console.log("Info message received and is correct");
+                    obj.resolve(e.data);
+                    this.queue.pop(0);
+                    return;
+                }
+            }
+        }
 
         let img = e.message.attachments[0];
         if (img === undefined) return; // Ignore this message
         //console.log("Message has an image attachment:", img.url);
-        //console.log("Message content:", e);
+       
         const regexString = "([A-Za-z0-9]+(-[A-Za-z0-9]+)+)";
         const regex = new RegExp(regexString);
         const matches = regex.exec(img.url);
         //console.log("Matches:", matches);
         let uuid = "";
+        img.uuid = {};
+        img.uuid.flag = 0;
         if(matches[0] == "ephemeral-attachments"){
             uuid = img.url.substring(img.url.indexOf(".png?")-36,img.url.indexOf(".png?"));
-            this.message_flags = 64;
+            img.uuid.flag = 64;
             //console.log("UUID from substring:", uuid);
         }else{
             uuid = matches[0];
-            this.message_flags = 0;
             //console.log("UUID from regex:", uuid);
         }
-        //let uuid = matches[0]=="ephemeral-attachments"?matches[2]:matches[0];
-        img.uuid = uuid;
+        
+        img.uuid.value = uuid
+
         img.id = e.message.id;
 
         let prompt_msg = e.message.content.substring(2); // Remove first two characters **
@@ -163,7 +177,8 @@ class MidjourneyDiscordBridge {
         });
     }
     async waitTwoSeconds() {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // waits like 2 -ish seconds to try and avoid automation detection
+        await new Promise(resolve => setTimeout(resolve, 500 * (Math.floor(Math.random() * 5) + 1)));
     };
 
     async cancelJob() {
@@ -176,13 +191,13 @@ class MidjourneyDiscordBridge {
         if(!this.loggedIn) {
             await this.loginPromise;
         }
-        let imageUUID = obj.uuid;
+        let imageUUID = obj.uuid.value;
         console.log("Cancelling job for image:", imageUUID);
         const payload = {
             type: 3,
             guild_id: this.GUILD_ID,
             channel_id: this.MIDJOURNEY_BOT_CHANNEL,
-            message_flags: this.message_flags,
+            message_flags: obj.uuid.flag,
             message_id: obj.id,
             application_id: "936929561302675456",
             session_id: this.session_id,
@@ -229,19 +244,19 @@ class MidjourneyDiscordBridge {
         if (!this.loggedIn) {
             await this.loginPromise;
         }
-        console.log("Waiting for two seconds then calling variation...");
+        console.log("Waiting for a bit then calling variation...");
         await this.waitTwoSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
         }
 
-        let imageUUID = obj.uuid;
+        let imageUUID = obj.uuid.value;
         console.log("Variation image:", imageUUID);
         const payload = {
             type: 3,
             guild_id: this.GUILD_ID,
             channel_id: this.MIDJOURNEY_BOT_CHANNEL,
-            message_flags: this.message_flags,
+            message_flags: obj.uuid.flag,
             message_id: obj.id,
             application_id: "936929561302675456",
             session_id: this.session_id,
@@ -294,25 +309,25 @@ class MidjourneyDiscordBridge {
         if (!this.loggedIn) {
             await this.loginPromise;
         }
-        console.log("Waiting for two seconds then calling zoom out...");
+        console.log("Waiting for a bit then calling zoom out...");
         await this.waitTwoSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
         }
 
-        let imageUUID = obj.uuid;
+        let imageUUID = obj.uuid.value;
         console.log("Zoom out image:", imageUUID);
         const payload = {
             type: 3,
             guild_id: this.GUILD_ID,
             channel_id: this.MIDJOURNEY_BOT_CHANNEL,
-            message_flags: this.message_flags,
+            message_flags: obj.uuid.flag,
             message_id: obj.id,
             application_id: "936929561302675456",
             session_id: this.session_id,
             data: {
                 component_type: 2,
-                custom_id: "MJ::Outpaint::50::1::"+ obj.uuid +"::SOLO"
+                custom_id: "MJ::Outpaint::50::1::"+ imageUUID +"::SOLO"
             }
         };
 
@@ -354,19 +369,19 @@ class MidjourneyDiscordBridge {
     }
     async upscaleImage(obj, imageNum, prompt) {
         this.currentJobObj = obj;
-        console.log("Waiting for two seconds then calling for updscaled image...");
+        console.log("Waiting for a bit then calling for updscaled image...");
         await this.waitTwoSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
         }
         let selectedImage = imageNum;
-        let imageUUID = obj.uuid;
+        let imageUUID = obj.uuid.value;
         console.log("Upscaling image:", imageUUID);
         const payload = {
             type: 3,
             guild_id: this.GUILD_ID,
             channel_id: this.MIDJOURNEY_BOT_CHANNEL,
-            message_flags: this.message_flags,
+            message_flags: obj.uuid.flag,
             message_id: obj.id,
             application_id: "936929561302675456",
             session_id: this.session_id,
@@ -412,6 +427,79 @@ class MidjourneyDiscordBridge {
         //console.log("Returning from upscaleRandomFromLastGenerated. ret: ", ret);
         return ret;
     }
+
+    async getInfo(){
+        if(!this.loggedIn){
+            await this.loginPromise;
+        }
+        const payload = {
+            type: 2,
+            application_id: "936929561302675456",
+            guild_id: this.GUILD_ID,
+            channel_id: this.MIDJOURNEY_BOT_CHANNEL,
+            session_id: this.session_id,
+            data: {
+                version: "1118961510123847776",
+                id: "972289487818334209",
+                name: "info",
+                type: 1,
+                options: [],
+                application_command: {
+                    id: "972289487818334209",
+                    application_id: "936929561302675456",
+                    version: "1118961510123847776",
+                    default_member_permissions: null,
+                    type: 1,
+                    nsfw: false,
+                    name: "info",
+                    description: "View information about your profile.",
+                    dm_permission: true,
+                    contexts: [
+                        0,
+                        1,
+                        2
+                    ],
+                    integration_types: [
+                        0
+                    ]
+                },
+                attachments: []
+            }
+        };
+
+        const headers = {
+            authorization: this.discord_token,
+        };
+
+        try {
+            const response = await axios.post(
+                "https://discord.com/api/v9/interactions",
+                payload,
+                { headers }
+            );
+            console.log(response.data);
+        } catch (error) {
+            if (error.response) {
+                // The request was made, and the server responded with a status code that falls out of the range of 2xx
+                console.error(
+                    "Error response:",
+                    error.response.status,
+                    error.response.data
+                );
+            } else if (error.request) {
+                // The request was made, but no response was received
+                console.error("No response received:", error.request);
+            } else {
+                // Something happened in setting up the request that triggered an Error
+                console.error("Error during request setup:", error.message);
+            }
+        }
+        let obj1 = { prompt: "info", cb: null };
+        this.queue.push(obj1);
+        //console.log("Added to queue:", obj1);
+        return await this._waitForDiscordMsg(obj1);
+    }
+
     async generateImage(prompt, callback = null) {
         /**
          * Generate image from the prompt.
