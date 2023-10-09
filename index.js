@@ -177,8 +177,8 @@ class MidjourneyDiscordBridge {
         });
     }
     async waitTwoSeconds() {
-        // waits like 2 -ish seconds to try and avoid automation detection
-        await new Promise(resolve => setTimeout(resolve, 500 * (Math.floor(Math.random() * 5) + 1)));
+        // waits like 2, 3 -ish seconds to try and avoid automation detection
+        await new Promise(resolve => setTimeout(resolve, 1000 * (Math.floor(Math.random() * 5) + 2)));
     };
 
     async cancelJob() {
