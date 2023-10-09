@@ -33,7 +33,7 @@ class MidjourneyDiscordBridge {
             if (content === "undo") undoCommand(e);
 
             if (e.message.content.endsWith("(Waiting to start)")) {
-                console.log("Image generation waiting to start");
+                //console.log("Image generation waiting to start");
                 return; // Ignore this message
             }
             
@@ -153,7 +153,7 @@ class MidjourneyDiscordBridge {
             obj.resolve = resolve;
         });
     }
-    async waitTwoSeconds() {
+    async waitTwoOrThreeSeconds() {
         // waits like 2, 3 -ish seconds to try and avoid automation detection
         await new Promise(resolve => setTimeout(resolve, 1000 * (Math.floor(Math.random() * 5) + 2)));
     };
@@ -217,12 +217,12 @@ class MidjourneyDiscordBridge {
 
     async variation(obj, selectedImage, prompt) {
         this.currentJobObj = obj;
-        await this.waitTwoSeconds();
+        await this.waitTwoOrThreeSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
         }
         console.log("Waiting for a bit then calling variation...");
-        await this.waitTwoSeconds();
+        await this.waitTwoOrThreeSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
         }
@@ -280,12 +280,12 @@ class MidjourneyDiscordBridge {
 
     async zoomOut(obj, prompt) {
         this.currentJobObj = obj;
-        await this.waitTwoSeconds();
+        await this.waitTwoOrThreeSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
         }
         console.log("Waiting for a bit then calling zoom out...");
-        await this.waitTwoSeconds();
+        await this.waitTwoOrThreeSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
         }
@@ -340,10 +340,70 @@ class MidjourneyDiscordBridge {
         ret.prompt = prompt;
         return ret;
     }
+
+    async rerollImage(obj, prompt){
+        this.currentJobObj = obj;
+        console.log("Waiting for a bit then calling reroll...");
+        await this.waitTwoOrThreeSeconds();
+        if (!this.loggedIn) {
+            await this.loginPromise;
+        }
+
+        let imageUUID = obj.uuid.value;
+        console.log("Reroll image:", imageUUID);
+        const payload = {
+            type: 3,
+            guild_id: this.GUILD_ID,
+            channel_id: this.MIDJOURNEY_BOT_CHANNEL,
+            message_flags: obj.uuid.flag,
+            message_id: obj.id,
+            application_id: "936929561302675456",
+            session_id: this.session_id,
+            data: {
+                component_type: 2,
+                custom_id: "MJ::JOB::reroll::0::" + imageUUID + "::SOLO",
+            }
+        };
+
+        const headers = {
+            authorization: this.discord_token,
+        };
+
+        try {
+            const response = await axios.post(
+                "https://discord.com/api/v9/interactions",
+                payload,
+                { headers }
+            );
+            console.log(response.data);
+        } catch (error) {
+            if (error.response) {
+                // The request was made, and the server responded with a status code that falls out of the range of 2xx
+                console.error(
+                    "Error response:",
+                    error.response.status,
+                    error.response.data
+                );
+            } else if (error.request) {
+                // The request was made, but no response was received
+                console.error("No response received:", error.request);
+            } else {
+                // Something happened in setting up the request that triggered an Error
+                console.error("Error during request setup:", error.message);
+            }
+        }
+
+        let obj1 = { prompt: prompt, cb: null};
+        this.queue.push(obj1);
+        let ret = await this._waitForDiscordMsg(obj1);
+        ret.prompt = prompt;
+        return ret;
+    }
+
     async upscaleImage(obj, imageNum, prompt) {
         this.currentJobObj = obj;
         console.log("Waiting for a bit then calling for upscaled image...");
-        await this.waitTwoSeconds();
+        await this.waitTwoOrThreeSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
         }
