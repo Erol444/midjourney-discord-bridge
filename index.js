@@ -16,10 +16,7 @@ class MidjourneyDiscordBridge {
         const Events = Discordie.Events;
         
         this.queue = [];
-
         this.session_id = "55c4bd6c10df4a06c8c9109f96dbddd3";
-
-        //this.message_flags = 0;
 
         this.loggedIn = false;
         this.loginResolver = null;
@@ -90,7 +87,6 @@ class MidjourneyDiscordBridge {
         if(e.socket == null) return;
         this.session_id = e.socket.sessionId;
         if(e.message == null) return;
-        //console.log(e.message.attachments);
         if(e.message.content == null) return;
         if(e.message.attachments == null) return;
         if(e.message.author == null) return;
@@ -101,11 +97,9 @@ class MidjourneyDiscordBridge {
         if(e.data!=null){
             if(e.data.interaction!=null){
                 if(e.data.interaction.name == "info"){
-                    //console.log("Info message received");
                     let obj = this.queue[0];
                     if(obj == null) return;
                     if(obj.prompt != "info") return;
-                    //console.log("Info message received and is correct");
                     obj.resolve(e.data);
                     this.queue.pop(0);
                     return;
@@ -115,12 +109,10 @@ class MidjourneyDiscordBridge {
 
         let img = e.message.attachments[0];
         if (img === undefined) return; // Ignore this message
-        //console.log("Message has an image attachment:", img.url);
        
         const regexString = "([A-Za-z0-9]+(-[A-Za-z0-9]+)+)";
         const regex = new RegExp(regexString);
         const matches = regex.exec(img.url);
-        //console.log("Matches:", matches);
         let uuid = "";
         img.uuid = {};
         img.uuid.flag = 0;
@@ -251,7 +243,6 @@ class MidjourneyDiscordBridge {
             }
         };
 
-        //console.log(payload);
         const headers = {
             authorization: this.discord_token,
         };
@@ -282,7 +273,6 @@ class MidjourneyDiscordBridge {
 
         let obj1 = { prompt: prompt, cb: null};
         this.queue.push(obj1);
-        //console.log("Added to queue:", obj1);
         let ret = await this._waitForDiscordMsg(obj1);
         ret.prompt = prompt;
         return ret;
@@ -316,7 +306,6 @@ class MidjourneyDiscordBridge {
             }
         };
 
-        //console.log(payload);
         const headers = {
             authorization: this.discord_token,
         };
@@ -347,7 +336,6 @@ class MidjourneyDiscordBridge {
 
         let obj1 = { prompt: prompt, cb: null};
         this.queue.push(obj1);
-        //console.log("Added to queue:", obj1);
         let ret = await this._waitForDiscordMsg(obj1);
         ret.prompt = prompt;
         return ret;
@@ -376,7 +364,6 @@ class MidjourneyDiscordBridge {
             }
         };
 
-        //console.log(payload);
         const headers = {
             authorization: this.discord_token,
         };
@@ -406,10 +393,8 @@ class MidjourneyDiscordBridge {
         }
         let obj1 = { prompt: prompt , cb: null};
         this.queue.push(obj1);
-        //console.log("Added to queue:", obj1);
         let ret = await this._waitForDiscordMsg(obj1);
         ret.prompt = prompt;
-        //console.log("Returning from upscaleRandomFromLastGenerated. ret: ", ret);
         return ret;
     }
 
@@ -481,7 +466,6 @@ class MidjourneyDiscordBridge {
         }
         let obj1 = { prompt: "info", cb: null };
         this.queue.push(obj1);
-        //console.log("Added to queue:", obj1);
         return await this._waitForDiscordMsg(obj1);
     }
 
@@ -574,7 +558,6 @@ class MidjourneyDiscordBridge {
         }
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
-        //console.log("Added to queue:", obj1);
         let ret = await this._waitForDiscordMsg(obj1);
         ret.prompt = prompt;
         return ret;
