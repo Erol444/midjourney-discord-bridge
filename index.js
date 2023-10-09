@@ -215,7 +215,7 @@ class MidjourneyDiscordBridge {
         return;
     }
 
-    async variation(obj, selectedImage, prompt) {
+    async variation(obj, selectedImage, prompt, callback = null) {
         this.currentJobObj = obj;
         await this.waitTwoOrThreeSeconds();
         if (!this.loggedIn) {
@@ -271,14 +271,14 @@ class MidjourneyDiscordBridge {
             }
         }
 
-        let obj1 = { prompt: prompt, cb: null};
+        let obj1 = { prompt: prompt, cb: callback};
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
         ret.prompt = prompt;
         return ret;
     }
 
-    async zoomOut(obj, prompt) {
+    async zoomOut(obj, prompt, callback = null) {
         this.currentJobObj = obj;
         await this.waitTwoOrThreeSeconds();
         if (!this.loggedIn) {
@@ -334,14 +334,14 @@ class MidjourneyDiscordBridge {
             }
         }
 
-        let obj1 = { prompt: prompt, cb: null};
+        let obj1 = { prompt: prompt, cb: callback};
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
         ret.prompt = prompt;
         return ret;
     }
 
-    async rerollImage(obj, prompt){
+    async rerollImage(obj, prompt, callback = null){
         this.currentJobObj = obj;
         console.log("Waiting for a bit then calling reroll...");
         await this.waitTwoOrThreeSeconds();
@@ -393,14 +393,14 @@ class MidjourneyDiscordBridge {
             }
         }
 
-        let obj1 = { prompt: prompt, cb: null};
+        let obj1 = { prompt: prompt, cb: callback};
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
         ret.prompt = prompt;
         return ret;
     }
 
-    async upscaleImage(obj, imageNum, prompt) {
+    async upscaleImage(obj, imageNum, prompt, callback = null) {
         this.currentJobObj = obj;
         console.log("Waiting for a bit then calling for upscaled image...");
         await this.waitTwoOrThreeSeconds();
@@ -451,7 +451,7 @@ class MidjourneyDiscordBridge {
                 console.error("Error during request setup:", error.message);
             }
         }
-        let obj1 = { prompt: prompt , cb: null};
+        let obj1 = { prompt: prompt , cb: callback};
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
         ret.prompt = prompt;
@@ -564,7 +564,7 @@ class MidjourneyDiscordBridge {
                     version: "1118961510123847772",
                     default_member_permissions: null,
                     type: 1,
-                    nsfw: false,
+                    nsfw: true,
                     name: "imagine",
                     description: "Create images with Midjourney",
                     dm_permission: true,
