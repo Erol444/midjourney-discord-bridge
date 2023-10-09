@@ -342,7 +342,7 @@ class MidjourneyDiscordBridge {
     }
     async upscaleImage(obj, imageNum, prompt) {
         this.currentJobObj = obj;
-        console.log("Waiting for a bit then calling for updscaled image...");
+        console.log("Waiting for a bit then calling for upscaled image...");
         await this.waitTwoSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
