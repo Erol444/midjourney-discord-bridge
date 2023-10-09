@@ -127,27 +127,21 @@ class MidjourneyDiscordBridge {
         if(matches[0] == "ephemeral-attachments"){
             uuid = img.url.substring(img.url.indexOf(".png?")-36,img.url.indexOf(".png?"));
             img.uuid.flag = 64;
-            //console.log("UUID from substring:", uuid);
         }else{
             uuid = matches[0];
-            //console.log("UUID from regex:", uuid);
         }
         
         img.uuid.value = uuid
-
         img.id = e.message.id;
 
         let prompt_msg = e.message.content.substring(2); // Remove first two characters **
-        //console.log("Prompt:", prompt_msg);
 
         let index = this._findItem(prompt_msg);
         if (index == null) {
-            //console.log("No item found for this prompt!", prompt_msg);
             return;
         }
 
         let item = this.queue[index];
-        //console.log("Found item:", item);
         if (update) {
             if (item.cb !== null) {
                 let progress = this._getProgress(e.message.content);
@@ -156,9 +150,7 @@ class MidjourneyDiscordBridge {
             return;
         } else {
             // Image generation finished!
-            //console.log("Image generation completed:", img.url);
             item.resolve(img);
-            //debugger;
             this.queue.pop(index);
         }
     }
@@ -167,13 +159,6 @@ class MidjourneyDiscordBridge {
         console.log("Waiting for Discord message...");
         return new Promise((resolve) => {    
             obj.resolve = resolve;
-            //console.log("Promise created: " + JSON.stringify(obj));
-            // this.timeOut = setTimeout(async () => {
-            //     //console.log("Timeout called");
-            //     await this.cancelJob(this.currentJobObj);
-            //     resolve(null);
-            //     this.timeOut.unref();
-            // }, 120 * 1000);
         });
     }
     async waitTwoSeconds() {
@@ -376,7 +361,7 @@ class MidjourneyDiscordBridge {
         }
         let selectedImage = imageNum;
         let imageUUID = obj.uuid.value;
-        console.log("Upscaling image:", imageUUID);
+        console.log("Upscaling image #" + imageNum + " from " , imageUUID);
         const payload = {
             type: 3,
             guild_id: this.GUILD_ID,
