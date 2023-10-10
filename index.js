@@ -33,7 +33,7 @@ class MidjourneyDiscordBridge {
             if (content === "undo") undoCommand(e);
 
             if (e.message.content.endsWith("(Waiting to start)")) {
-                //console.log("Image generation waiting to start");
+                //this.logger("Image generation waiting to start");
                 return; // Ignore this message
             }
             
@@ -44,19 +44,18 @@ class MidjourneyDiscordBridge {
         this.client.Dispatcher.on("MESSAGE_UPDATE", (e) => this._newDiscordMsg(e, true));
 
         this.client.Dispatcher.on(Events.GATEWAY_READY, e => {
-            console.log("Connected to the Discord as: " + this.client.User.username);
+            this.logger("\nConnected to the Discord as: " + this.client.User.username);
             this.loggedIn = true;
             this.loginResolver(); // Call the stored resolve function
         });
 
         this.client.Dispatcher.on(Events.DISCONNECTED, e => {
-            console.log('Disconnected from Discord');
+            this.logger('Disconnected from Discord');
             this.client.connect({ token: this.discord_token });
         });
 
         this.client.connect({ token: this.discord_token });
     }
-
 
     _getProgress(str) {
         const regex = /\((\d+)%\)/;
@@ -148,7 +147,7 @@ class MidjourneyDiscordBridge {
     }
 
     _waitForDiscordMsg(obj) {
-        console.log("Waiting for Discord message...");
+        this.logger("Waiting for Discord message...");
         return new Promise((resolve) => {    
             obj.resolve = resolve;
         });
@@ -169,7 +168,7 @@ class MidjourneyDiscordBridge {
             await this.loginPromise;
         }
         let imageUUID = obj.uuid.value;
-        console.log("Cancelling job for image:", imageUUID);
+        this.logger("Cancelling job for image:", imageUUID);
         const payload = {
             type: 3,
             guild_id: this.GUILD_ID,
@@ -194,7 +193,7 @@ class MidjourneyDiscordBridge {
                 payload,
                 { headers }
             );
-            console.log(response.data);
+            this.logger(response.data);
         } catch (error) {
             if (error.response) {
                 // The request was made, and the server responded with a status code that falls out of the range of 2xx
@@ -221,14 +220,14 @@ class MidjourneyDiscordBridge {
         if (!this.loggedIn) {
             await this.loginPromise;
         }
-        console.log("Waiting for a bit then calling variation...");
+        this.logger("Waiting for a bit then calling variation...");
         await this.waitTwoOrThreeSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
         }
 
         let imageUUID = obj.uuid.value;
-        console.log("Variation image:", imageUUID);
+        this.logger("Variation image:", imageUUID);
         const payload = {
             type: 3,
             guild_id: this.GUILD_ID,
@@ -253,7 +252,7 @@ class MidjourneyDiscordBridge {
                 payload,
                 { headers }
             );
-            console.log(response.data);
+            this.logger(response.data);
         } catch (error) {
             if (error.response) {
                 // The request was made, and the server responded with a status code that falls out of the range of 2xx
@@ -284,14 +283,14 @@ class MidjourneyDiscordBridge {
         if (!this.loggedIn) {
             await this.loginPromise;
         }
-        console.log("Waiting for a bit then calling zoom out...");
+        this.logger("Waiting for a bit then calling zoom out...");
         await this.waitTwoOrThreeSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
         }
 
         let imageUUID = obj.uuid.value;
-        console.log("Zoom out image:", imageUUID);
+        this.logger("Zoom out image:", imageUUID);
         const payload = {
             type: 3,
             guild_id: this.GUILD_ID,
@@ -316,7 +315,7 @@ class MidjourneyDiscordBridge {
                 payload,
                 { headers }
             );
-            console.log(response.data);
+            this.logger(response.data);
         } catch (error) {
             if (error.response) {
                 // The request was made, and the server responded with a status code that falls out of the range of 2xx
@@ -343,14 +342,14 @@ class MidjourneyDiscordBridge {
 
     async rerollImage(obj, prompt, callback = null){
         this.currentJobObj = obj;
-        console.log("Waiting for a bit then calling reroll...");
+        this.logger("Waiting for a bit then calling reroll...");
         await this.waitTwoOrThreeSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
         }
 
         let imageUUID = obj.uuid.value;
-        console.log("Reroll image:", imageUUID);
+        this.logger("Reroll image:", imageUUID);
         const payload = {
             type: 3,
             guild_id: this.GUILD_ID,
@@ -375,7 +374,7 @@ class MidjourneyDiscordBridge {
                 payload,
                 { headers }
             );
-            console.log(response.data);
+            this.logger(response.data);
         } catch (error) {
             if (error.response) {
                 // The request was made, and the server responded with a status code that falls out of the range of 2xx
@@ -402,14 +401,14 @@ class MidjourneyDiscordBridge {
 
     async upscaleImage(obj, imageNum, prompt, callback = null) {
         this.currentJobObj = obj;
-        console.log("Waiting for a bit then calling for upscaled image...");
+        this.logger("Waiting for a bit then calling for upscaled image...");
         await this.waitTwoOrThreeSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
         }
         let selectedImage = imageNum;
         let imageUUID = obj.uuid.value;
-        console.log("Upscaling image #" + imageNum + " from " , imageUUID);
+        this.logger("Upscaling image #" + imageNum + " from " , imageUUID);
         const payload = {
             type: 3,
             guild_id: this.GUILD_ID,
@@ -434,7 +433,7 @@ class MidjourneyDiscordBridge {
                 payload,
                 { headers }
             );
-            console.log(response.data);
+            this.logger(response.data);
         } catch (error) {
             if (error.response) {
                 // The request was made, and the server responded with a status code that falls out of the range of 2xx
@@ -507,7 +506,7 @@ class MidjourneyDiscordBridge {
                 payload,
                 { headers }
             );
-            console.log(response.data);
+            this.logger(response.data);
         } catch (error) {
             if (error.response) {
                 // The request was made, and the server responded with a status code that falls out of the range of 2xx
@@ -599,7 +598,7 @@ class MidjourneyDiscordBridge {
                 payload,
                 { headers }
             );
-            console.log(response.data);
+            this.logger(response.data);
         } catch (error) {
             if (error.response) {
                 // The request was made, and the server responded with a status code that falls out of the range of 2xx
@@ -625,6 +624,16 @@ class MidjourneyDiscordBridge {
 
     close() {
         this.client.disconnect();
+    }
+
+    logger(msg) {
+        process.stdout.write("\n");
+        process.stdout.clearLine();
+        process.stdout.cursorTo(0);
+        process.stdout.write(msg);
+        process.stdout.moveCursor(0, -1);
+        process.stdout.cursorTo(0);
+        process.stdout.clearLine();
     }
 }
 
