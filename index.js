@@ -2,7 +2,7 @@ const axios = require("axios");
 const Discordie = require("discordie");
 
 class MidjourneyDiscordBridge {
-    constructor(discord_token, guild_id ,channel_id) {
+    constructor(discord_token, guild_id, channel_id) {
         /**
          * @param {string} discord_token - Your discord token that has access to Midjourney bot
          */
@@ -14,9 +14,11 @@ class MidjourneyDiscordBridge {
 
         this.client = new Discordie();
         const Events = Discordie.Events;
-        
+
         this.queue = [];
         this.session_id = "55c4bd6c10df4a06c8c9109f96dbddd3";
+
+        this.loggerCB = null;
 
         this.loggedIn = false;
         this.loginResolver = null;
@@ -36,7 +38,7 @@ class MidjourneyDiscordBridge {
                 //this.logger("Image generation waiting to start");
                 return; // Ignore this message
             }
-            
+
 
             this._newDiscordMsg(e, false);
         });
@@ -80,25 +82,25 @@ class MidjourneyDiscordBridge {
         /**
          * Handle a new message from Discord.
          */
-        
-        
-        if(e == null) return;
-        if(e.socket == null) return;
+
+
+        if (e == null) return;
+        if (e.socket == null) return;
         this.session_id = e.socket.sessionId;
-        if(e.message == null) return;
-        if(e.message.content == null) return;
-        if(e.message.attachments == null) return;
-        if(e.message.author == null) return;
+        if (e.message == null) return;
+        if (e.message.content == null) return;
+        if (e.message.attachments == null) return;
+        if (e.message.author == null) return;
         // Not a DM and not from the bot itself
         if (e.message.author.id != this.MIDJOURNEY_BOT_ID) {
             return;
         }
-        if(e.data!=null){
-            if(e.data.interaction!=null){
-                if(e.data.interaction.name == "info"){
+        if (e.data != null) {
+            if (e.data.interaction != null) {
+                if (e.data.interaction.name == "info") {
                     let obj = this.queue[0];
-                    if(obj == null) return;
-                    if(obj.prompt != "info") return;
+                    if (obj == null) return;
+                    if (obj.prompt != "info") return;
                     obj.resolve(e.data);
                     this.queue.pop(0);
                     return;
@@ -108,20 +110,20 @@ class MidjourneyDiscordBridge {
 
         let img = e.message.attachments[0];
         if (img === undefined) return; // Ignore this message
-       
+
         const regexString = "([A-Za-z0-9]+(-[A-Za-z0-9]+)+)";
         const regex = new RegExp(regexString);
         const matches = regex.exec(img.url);
         let uuid = "";
         img.uuid = {};
         img.uuid.flag = 0;
-        if(matches[0] == "ephemeral-attachments"){
-            uuid = img.url.substring(img.url.indexOf(".png?")-36,img.url.indexOf(".png?"));
+        if (matches[0] == "ephemeral-attachments") {
+            uuid = img.url.substring(img.url.indexOf(".png?") - 36, img.url.indexOf(".png?"));
             img.uuid.flag = 64;
-        }else{
+        } else {
             uuid = matches[0];
         }
-        
+
         img.uuid.value = uuid
         img.id = e.message.id;
 
@@ -148,7 +150,7 @@ class MidjourneyDiscordBridge {
 
     _waitForDiscordMsg(obj) {
         this.logger("Waiting for Discord message...");
-        return new Promise((resolve) => {    
+        return new Promise((resolve) => {
             obj.resolve = resolve;
         });
     }
@@ -159,12 +161,12 @@ class MidjourneyDiscordBridge {
 
     async cancelJob() {
         let obj;
-        if(this.currentJobObj != null) {
+        if (this.currentJobObj != null) {
             obj = this.currentJobObj;
-        }else {
+        } else {
             return;
         }
-        if(!this.loggedIn) {
+        if (!this.loggedIn) {
             await this.loginPromise;
         }
         let imageUUID = obj.uuid.value;
@@ -270,7 +272,7 @@ class MidjourneyDiscordBridge {
             }
         }
 
-        let obj1 = { prompt: prompt, cb: callback};
+        let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
         ret.prompt = prompt;
@@ -301,7 +303,7 @@ class MidjourneyDiscordBridge {
             session_id: this.session_id,
             data: {
                 component_type: 2,
-                custom_id: "MJ::Outpaint::50::1::"+ imageUUID +"::SOLO"
+                custom_id: "MJ::Outpaint::50::1::" + imageUUID + "::SOLO"
             }
         };
 
@@ -333,14 +335,14 @@ class MidjourneyDiscordBridge {
             }
         }
 
-        let obj1 = { prompt: prompt, cb: callback};
+        let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
         ret.prompt = prompt;
         return ret;
     }
 
-    async rerollImage(obj, prompt, callback = null){
+    async rerollImage(obj, prompt, callback = null) {
         this.currentJobObj = obj;
         this.logger("Waiting for a bit then calling reroll...");
         await this.waitTwoOrThreeSeconds();
@@ -392,7 +394,7 @@ class MidjourneyDiscordBridge {
             }
         }
 
-        let obj1 = { prompt: prompt, cb: callback};
+        let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
         ret.prompt = prompt;
@@ -408,7 +410,7 @@ class MidjourneyDiscordBridge {
         }
         let selectedImage = imageNum;
         let imageUUID = obj.uuid.value;
-        this.logger("Upscaling image #" + imageNum + " from " , imageUUID);
+        this.logger("Upscaling image #" + imageNum + " from ", imageUUID);
         const payload = {
             type: 3,
             guild_id: this.GUILD_ID,
@@ -450,15 +452,15 @@ class MidjourneyDiscordBridge {
                 console.error("Error during request setup:", error.message);
             }
         }
-        let obj1 = { prompt: prompt , cb: callback};
+        let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
         ret.prompt = prompt;
         return ret;
     }
 
-    async getInfo(){
-        if(!this.loggedIn){
+    async getInfo() {
+        if (!this.loggedIn) {
             await this.loginPromise;
         }
         const payload = {
@@ -627,13 +629,22 @@ class MidjourneyDiscordBridge {
     }
 
     logger(msg) {
-        process.stdout.write("\n");
-        process.stdout.clearLine();
-        process.stdout.cursorTo(0);
-        process.stdout.write(msg);
-        process.stdout.moveCursor(0, -1);
-        process.stdout.cursorTo(0);
-        process.stdout.clearLine();
+        if (this.loggerCB == null) {
+            process.stdout.write("\n");
+            process.stdout.clearLine();
+            process.stdout.cursorTo(0);
+            process.stdout.write(msg);
+            process.stdout.moveCursor(0, -1);
+            process.stdout.cursorTo(0);
+            process.stdout.clearLine();
+        } else {
+            this.loggerCB(msg);
+        }
+
+    }
+
+    registerLoggerCB(cb) {
+        this.loggerCB = cb;
     }
 }
 
