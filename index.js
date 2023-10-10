@@ -44,7 +44,7 @@ class MidjourneyDiscordBridge {
         this.client.Dispatcher.on("MESSAGE_UPDATE", (e) => this._newDiscordMsg(e, true));
 
         this.client.Dispatcher.on(Events.GATEWAY_READY, e => {
-            this.logger("\nConnected to the Discord as: " + this.client.User.username);
+            //this.logger("\nConnected to the Discord as: " + this.client.User.username);
             this.loggedIn = true;
             this.loginResolver(); // Call the stored resolve function
         });
