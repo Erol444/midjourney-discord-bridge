@@ -20,6 +20,8 @@ class MidjourneyDiscordBridge {
 
         this.loggerCB = null;
 
+        this.disconnectResolver = null;
+
         this.loggedIn = false;
         this.loginResolver = null;
         this.loginPromise = new Promise((resolve) => {
@@ -29,17 +31,9 @@ class MidjourneyDiscordBridge {
         this.client.Dispatcher.on("MESSAGE_CREATE", (e) => {
             const content = e.message.content;
             const channel = e.message.channel;
-
             if (content === "ping") channel.sendMessage("pong");
             if (content === "do") doCommand(e);
             if (content === "undo") undoCommand(e);
-
-            if (e.message.content.endsWith("(Waiting to start)")) {
-                //this.logger("Image generation waiting to start");
-                return; // Ignore this message
-            }
-
-
             this._newDiscordMsg(e, false);
         });
 
@@ -52,11 +46,15 @@ class MidjourneyDiscordBridge {
         });
 
         this.client.Dispatcher.on(Events.DISCONNECTED, e => {
-            this.logger('Disconnected from Discord');
+            //this.logger('Disconnected from Discord. Reconnecting...');
             this.client.connect({ token: this.discord_token });
         });
 
         this.client.connect({ token: this.discord_token });
+
+        this.client.Dispatcher.on(Events.GATEWAY_DISCONNECT, (e) => {
+            if(this.disconnectResolver != null) this.disconnectResolver();
+        });
     }
 
     _getProgress(str) {
@@ -154,6 +152,17 @@ class MidjourneyDiscordBridge {
             obj.resolve = resolve;
         });
     }
+
+    _waitForDiscordDisconnectg() {
+        if(!this.client.connected) {
+            return;
+        }
+        return new Promise((resolve) => {
+            this.logger("Waiting for Discord disconnect");
+            this.disconnectResolver = resolve;
+        });
+    }
+
     async waitTwoOrThreeSeconds() {
         // waits like 2, 3 -ish seconds to try and avoid automation detection
         await new Promise(resolve => setTimeout(resolve, 1000 * (Math.floor(Math.random() * 5) + 2)));
@@ -624,8 +633,9 @@ class MidjourneyDiscordBridge {
         return ret;
     }
 
-    close() {
+    async close() {
         this.client.disconnect();
+        return await this._waitForDiscordDisconnectg();
     }
 
     logger(msg) {
@@ -638,7 +648,7 @@ class MidjourneyDiscordBridge {
             process.stdout.cursorTo(0);
             process.stdout.clearLine();
         } else {
-            this.loggerCB(msg);
+            this.loggerCB({mj: msg});
         }
 
     }
