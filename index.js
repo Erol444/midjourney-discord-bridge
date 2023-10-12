@@ -11,17 +11,13 @@ class MidjourneyDiscordBridge {
         this.MIDJOURNEY_BOT_CHANNEL = channel_id;
         this.GUILD_ID = guild_id;
         this.discord_token = discord_token;
-
         this.client = new Discordie();
         const Events = Discordie.Events;
-
         this.queue = [];
         this.session_id = "55c4bd6c10df4a06c8c9109f96dbddd3";
-
         this.loggerCB = null;
-
         this.disconnectResolver = null;
-
+        this.lastPayload = null;
         this.loggedIn = false;
         this.loginResolver = null;
         this.loginPromise = new Promise((resolve) => {
@@ -76,11 +72,10 @@ class MidjourneyDiscordBridge {
         return null;
     }
 
-    _newDiscordMsg(e, update) {
+    async _newDiscordMsg(e, update) {
         /**
          * Handle a new message from Discord.
          */
-
 
         if (e == null) return;
         if (e.socket == null) return;
@@ -107,7 +102,16 @@ class MidjourneyDiscordBridge {
         }
 
         let img = e.message.attachments[0];
-        if (img === undefined) return; // Ignore this message
+        if (img === undefined) {
+            if ((e.message.content.includes("Bad response") || e.message.content.includes("Internal Error")) && this.lastPayload != null) {
+                // check to see if this is a bad response to a payload we sent
+                if(this._findItem(e.message.content) != null) {
+                    await this.waitTwoOrThreeSeconds();
+                    this.sendpaylod(this.lastPayload);
+                }
+            }
+            return;
+        }
 
         const regexString = "([A-Za-z0-9]+(-[A-Za-z0-9]+)+)";
         const regex = new RegExp(regexString);
@@ -131,6 +135,7 @@ class MidjourneyDiscordBridge {
         if (index == null) {
             return;
         }
+        
 
         let item = this.queue[index];
         if (update) {
@@ -168,118 +173,74 @@ class MidjourneyDiscordBridge {
         await new Promise(resolve => setTimeout(resolve, 1000 * (Math.floor(Math.random() * 5) + 2)));
     };
 
+    buildPayload(type, custom_id, obj) {
+        const payload = {
+            type: type,
+            guild_id: this.GUILD_ID,
+            channel_id: this.MIDJOURNEY_BOT_CHANNEL,
+            message_flags: obj.uuid.flag,
+            message_id: obj.id,
+            application_id: "936929561302675456",
+            session_id: this.session_id,
+            data: {
+                component_type: 2,
+                custom_id: custom_id,
+            }
+        };
+        return payload;
+    }
+
     async cancelJob() {
-        let obj;
-        if (this.currentJobObj != null) {
-            obj = this.currentJobObj;
-        } else {
+        if (this.currentJobObj == null) {
             return;
         }
         if (!this.loggedIn) {
             await this.loginPromise;
         }
-        let imageUUID = obj.uuid.value;
-        this.logger("Cancelling job for image:", imageUUID);
-        const payload = {
-            type: 3,
-            guild_id: this.GUILD_ID,
-            channel_id: this.MIDJOURNEY_BOT_CHANNEL,
-            message_flags: obj.uuid.flag,
-            message_id: obj.id,
-            application_id: "936929561302675456",
-            session_id: this.session_id,
-            data: {
-                component_type: 2,
-                custom_id: "MJ::CancelJob::ByJobid::" + imageUUID,
-            }
-        };
-
-        const headers = {
-            authorization: this.discord_token,
-        };
-
-        try {
-            const response = await axios.post(
-                "https://discord.com/api/v9/interactions",
-                payload,
-                { headers }
-            );
-            this.logger(response.data);
-        } catch (error) {
-            if (error.response) {
-                // The request was made, and the server responded with a status code that falls out of the range of 2xx
-                console.error(
-                    "Error response:",
-                    error.response.status,
-                    error.response.data
-                );
-            } else if (error.request) {
-                // The request was made, but no response was received
-                console.error("No response received:", error.request);
-            } else {
-                // Something happened in setting up the request that triggered an Error
-                console.error("Error during request setup:", error.message);
-            }
-        }
-
+        this.logger("Cancelling job for image:", this.currentJobObj.uuid.value);
+        const payload = this.buildPayload(3, "MJ::CancelJob::ByJobid::" + imaobj.uuid.valuegeUUID, this.currentJobObj);
+        // const payload = {
+        //     type: 3,
+        //     guild_id: this.GUILD_ID,
+        //     channel_id: this.MIDJOURNEY_BOT_CHANNEL,
+        //     message_flags: obj.uuid.flag,
+        //     message_id: obj.id,
+        //     application_id: "936929561302675456",
+        //     session_id: this.session_id,
+        //     data: {
+        //         component_type: 2,
+        //         custom_id: "MJ::CancelJob::ByJobid::" + imageUUID,
+        //     }
+        // };
+        this.sendpaylod(payload);
         return;
     }
 
+    
+
     async variation(obj, selectedImage, prompt, callback = null) {
         this.currentJobObj = obj;
-        await this.waitTwoOrThreeSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
         }
         this.logger("Waiting for a bit then calling variation...");
         await this.waitTwoOrThreeSeconds();
-        if (!this.loggedIn) {
-            await this.loginPromise;
-        }
-
-        let imageUUID = obj.uuid.value;
-        this.logger("Variation image:", imageUUID);
-        const payload = {
-            type: 3,
-            guild_id: this.GUILD_ID,
-            channel_id: this.MIDJOURNEY_BOT_CHANNEL,
-            message_flags: obj.uuid.flag,
-            message_id: obj.id,
-            application_id: "936929561302675456",
-            session_id: this.session_id,
-            data: {
-                component_type: 2,
-                custom_id: "MJ::JOB::variation::" + selectedImage + "::" + imageUUID,
-            }
-        };
-
-        const headers = {
-            authorization: this.discord_token,
-        };
-
-        try {
-            const response = await axios.post(
-                "https://discord.com/api/v9/interactions",
-                payload,
-                { headers }
-            );
-            this.logger(response.data);
-        } catch (error) {
-            if (error.response) {
-                // The request was made, and the server responded with a status code that falls out of the range of 2xx
-                console.error(
-                    "Error response:",
-                    error.response.status,
-                    error.response.data
-                );
-            } else if (error.request) {
-                // The request was made, but no response was received
-                console.error("No response received:", error.request);
-            } else {
-                // Something happened in setting up the request that triggered an Error
-                console.error("Error during request setup:", error.message);
-            }
-        }
+        this.logger("Variation image:", obj.uuid.value);
+        const payload = this.buildPayload(3, "MJ::JOB::variation::" + selectedImage + "::" + obj.uuid.value, obj);
+        // const payload = {
+        //     type: 3,
+        //     guild_id: this.GUILD_ID,
+        //     channel_id: this.MIDJOURNEY_BOT_CHANNEL,
+        //     message_flags: obj.uuid.flag,
+        //     message_id: obj.id,
+        //     application_id: "936929561302675456",
+        //     session_id: this.session_id,
+        //     data: {
+        //         component_type: 2,
+        //         custom_id: "MJ::JOB::variation::" + selectedImage + "::" + imageUUID,
+        //     }
+        // };
+        this.sendpaylod(payload);
 
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
@@ -290,59 +251,27 @@ class MidjourneyDiscordBridge {
 
     async zoomOut(obj, prompt, callback = null) {
         this.currentJobObj = obj;
-        await this.waitTwoOrThreeSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
         }
         this.logger("Waiting for a bit then calling zoom out...");
         await this.waitTwoOrThreeSeconds();
-        if (!this.loggedIn) {
-            await this.loginPromise;
-        }
-
-        let imageUUID = obj.uuid.value;
-        this.logger("Zoom out image:", imageUUID);
-        const payload = {
-            type: 3,
-            guild_id: this.GUILD_ID,
-            channel_id: this.MIDJOURNEY_BOT_CHANNEL,
-            message_flags: obj.uuid.flag,
-            message_id: obj.id,
-            application_id: "936929561302675456",
-            session_id: this.session_id,
-            data: {
-                component_type: 2,
-                custom_id: "MJ::Outpaint::50::1::" + imageUUID + "::SOLO"
-            }
-        };
-
-        const headers = {
-            authorization: this.discord_token,
-        };
-
-        try {
-            const response = await axios.post(
-                "https://discord.com/api/v9/interactions",
-                payload,
-                { headers }
-            );
-            this.logger(response.data);
-        } catch (error) {
-            if (error.response) {
-                // The request was made, and the server responded with a status code that falls out of the range of 2xx
-                console.error(
-                    "Error response:",
-                    error.response.status,
-                    error.response.data
-                );
-            } else if (error.request) {
-                // The request was made, but no response was received
-                console.error("No response received:", error.request);
-            } else {
-                // Something happened in setting up the request that triggered an Error
-                console.error("Error during request setup:", error.message);
-            }
-        }
+        this.logger("Zoom out image:", obj.uuid.value);
+        const payload = this.buildPayload(3, "MJ::Outpaint::50::1::" + obj.uuid.value + "::SOLO", obj);
+        // const payload = {
+        //     type: 3,
+        //     guild_id: this.GUILD_ID,
+        //     channel_id: this.MIDJOURNEY_BOT_CHANNEL,
+        //     message_flags: obj.uuid.flag,
+        //     message_id: obj.id,
+        //     application_id: "936929561302675456",
+        //     session_id: this.session_id,
+        //     data: {
+        //         component_type: 2,
+        //         custom_id: "MJ::Outpaint::50::1::" + imageUUID + "::SOLO"
+        //     }
+        // };
+        this.sendpaylod(payload);
 
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
@@ -353,55 +282,27 @@ class MidjourneyDiscordBridge {
 
     async rerollImage(obj, prompt, callback = null) {
         this.currentJobObj = obj;
-        this.logger("Waiting for a bit then calling reroll...");
-        await this.waitTwoOrThreeSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
         }
-
-        let imageUUID = obj.uuid.value;
-        this.logger("Reroll image:", imageUUID);
-        const payload = {
-            type: 3,
-            guild_id: this.GUILD_ID,
-            channel_id: this.MIDJOURNEY_BOT_CHANNEL,
-            message_flags: obj.uuid.flag,
-            message_id: obj.id,
-            application_id: "936929561302675456",
-            session_id: this.session_id,
-            data: {
-                component_type: 2,
-                custom_id: "MJ::JOB::reroll::0::" + imageUUID + "::SOLO",
-            }
-        };
-
-        const headers = {
-            authorization: this.discord_token,
-        };
-
-        try {
-            const response = await axios.post(
-                "https://discord.com/api/v9/interactions",
-                payload,
-                { headers }
-            );
-            this.logger(response.data);
-        } catch (error) {
-            if (error.response) {
-                // The request was made, and the server responded with a status code that falls out of the range of 2xx
-                console.error(
-                    "Error response:",
-                    error.response.status,
-                    error.response.data
-                );
-            } else if (error.request) {
-                // The request was made, but no response was received
-                console.error("No response received:", error.request);
-            } else {
-                // Something happened in setting up the request that triggered an Error
-                console.error("Error during request setup:", error.message);
-            }
-        }
+        this.logger("Waiting for a bit then calling reroll...");
+        await this.waitTwoOrThreeSeconds();
+        this.logger("Reroll image:", obj.uuid.value);
+        const payload = this.buildPayload(3, "MJ::JOB::reroll::0::" + obj.uuid.value + "::SOLO", obj);
+        // const payload = {
+        //     type: 3,
+        //     guild_id: this.GUILD_ID,
+        //     channel_id: this.MIDJOURNEY_BOT_CHANNEL,
+        //     message_flags: obj.uuid.flag,
+        //     message_id: obj.id,
+        //     application_id: "936929561302675456",
+        //     session_id: this.session_id,
+        //     data: {
+        //         component_type: 2,
+        //         custom_id: "MJ::JOB::reroll::0::" + imageUUID + "::SOLO",
+        //     }
+        // };
+        this.sendpaylod(payload);
 
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
@@ -417,50 +318,23 @@ class MidjourneyDiscordBridge {
         if (!this.loggedIn) {
             await this.loginPromise;
         }
-        let selectedImage = imageNum;
-        let imageUUID = obj.uuid.value;
-        this.logger("Upscaling image #" + imageNum + " from ", imageUUID);
-        const payload = {
-            type: 3,
-            guild_id: this.GUILD_ID,
-            channel_id: this.MIDJOURNEY_BOT_CHANNEL,
-            message_flags: obj.uuid.flag,
-            message_id: obj.id,
-            application_id: "936929561302675456",
-            session_id: this.session_id,
-            data: {
-                component_type: 2,
-                custom_id: "MJ::JOB::upsample::" + selectedImage + "::" + imageUUID,
-            }
-        };
+        this.logger("Upscaling image #" + imageNum + " from ", obj.uuid.value);
+        const payload = this.buildPayload(3, "MJ::JOB::upsample::" + imageNum + "::" + obj.uuid.value, obj);
+        // const payload = {
+        //     type: 3,
+        //     guild_id: this.GUILD_ID,
+        //     channel_id: this.MIDJOURNEY_BOT_CHANNEL,
+        //     message_flags: obj.uuid.flag,
+        //     message_id: obj.id,
+        //     application_id: "936929561302675456",
+        //     session_id: this.session_id,
+        //     data: {
+        //         component_type: 2,
+        //         custom_id: "MJ::JOB::upsample::" + selectedImage + "::" + imageUUID,
+        //     }
+        // };
+        this.sendpaylod(payload);
 
-        const headers = {
-            authorization: this.discord_token,
-        };
-
-        try {
-            const response = await axios.post(
-                "https://discord.com/api/v9/interactions",
-                payload,
-                { headers }
-            );
-            this.logger(response.data);
-        } catch (error) {
-            if (error.response) {
-                // The request was made, and the server responded with a status code that falls out of the range of 2xx
-                console.error(
-                    "Error response:",
-                    error.response.status,
-                    error.response.data
-                );
-            } else if (error.request) {
-                // The request was made, but no response was received
-                console.error("No response received:", error.request);
-            } else {
-                // Something happened in setting up the request that triggered an Error
-                console.error("Error during request setup:", error.message);
-            }
-        }
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
@@ -507,6 +381,20 @@ class MidjourneyDiscordBridge {
             }
         };
 
+        this.sendpaylod(payload);
+
+        let obj1 = { prompt: "info", cb: null };
+        this.queue.push(obj1);
+        return await this._waitForDiscordMsg(obj1);
+    }
+
+    async sendpaylod(payload) {
+        if (!this.loggedIn) {
+            await this.loginPromise;
+        }
+
+        this.lastPayload = payload;
+
         const headers = {
             authorization: this.discord_token,
         };
@@ -534,10 +422,8 @@ class MidjourneyDiscordBridge {
                 console.error("Error during request setup:", error.message);
             }
         }
-        let obj1 = { prompt: "info", cb: null };
-        this.queue.push(obj1);
-        return await this._waitForDiscordMsg(obj1);
     }
+
 
     async generateImage(prompt, callback = null) {
         /**
@@ -599,33 +485,8 @@ class MidjourneyDiscordBridge {
             }
         };
 
-        const headers = {
-            authorization: this.discord_token,
-        };
+        this.sendpaylod(payload);
 
-        try {
-            const response = await axios.post(
-                "https://discord.com/api/v9/interactions",
-                payload,
-                { headers }
-            );
-            this.logger(response.data);
-        } catch (error) {
-            if (error.response) {
-                // The request was made, and the server responded with a status code that falls out of the range of 2xx
-                console.error(
-                    "Error response:",
-                    error.response.status,
-                    error.response.data
-                );
-            } else if (error.request) {
-                // The request was made, but no response was received
-                console.error("No response received:", error.request);
-            } else {
-                // Something happened in setting up the request that triggered an Error
-                console.error("Error during request setup:", error.message);
-            }
-        }
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
