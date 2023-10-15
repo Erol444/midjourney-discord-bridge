@@ -142,9 +142,10 @@ class MidjourneyDiscordBridge {
 
         img.uuid.value = uuid
         img.id = e.message.id;
+        img.prompt = e.message.content.substring(2, e.message.content.lastIndexOf("** "));
 
         let prompt_msg = e.message.content.substring(2); // Remove first two characters **
-
+        //console.log("prompt_msg:", img.prompt);
         let index = this._findItem(prompt_msg);
         if (index == null) {
             return;
