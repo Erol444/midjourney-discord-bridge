@@ -544,7 +544,7 @@ class MidjourneyDiscordBridge {
             process.stdout.cursorTo(0);
             process.stdout.clearLine();
         } else {
-            this.loggerCB({mj: msg});
+            this.loggerCB(msg);
         }
 
     }
