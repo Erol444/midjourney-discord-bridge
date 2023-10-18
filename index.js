@@ -117,7 +117,12 @@ class MidjourneyDiscordBridge {
 
         let img = e.message.attachments[0];
         if (img === undefined) {
-            if ((e.message.content.includes("Bad response") || e.message.content.includes("Internal Error") || e.message.content.includes("There was an error processing your request.")) && this.lastPayload != null) {
+            if (
+            (e.message.content.includes("Bad response") || 
+            e.message.content.includes("Internal Error") || 
+            e.message.content.includes("There was an error processing your request.") || 
+            e.message.content.includes("Invlid Form Body")
+            ) && this.lastPayload != null) {
                 // check to see if this is a bad response to a payload we sent
                 if(this._findItem(e.message.content) != null) {
                     // wait for a bit then resend the payload
