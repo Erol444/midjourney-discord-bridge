@@ -171,6 +171,10 @@ class MidjourneyDiscordBridge {
         this.logger("Waiting for Discord message...");
         return new Promise((resolve) => {
             obj.resolve = resolve;
+            setTimeout(() => {
+                this.logger("Timeout waiting for Discord message (10 minutes)");
+                obj.resolve(null);
+            }, 1000 * 60 * 10); // 10 minutes
         });
     }
 
@@ -261,6 +265,9 @@ class MidjourneyDiscordBridge {
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
+        if(ret == null) {
+            return null;
+        }
         ret.prompt = prompt;
         return ret;
     }
@@ -292,6 +299,9 @@ class MidjourneyDiscordBridge {
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
+        if(ret == null) {
+            return null;
+        }
         ret.prompt = prompt;
         return ret;
     }
@@ -323,6 +333,9 @@ class MidjourneyDiscordBridge {
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
+        if(ret == null) {
+            return null;
+        }
         ret.prompt = prompt;
         return ret;
     }
@@ -354,6 +367,9 @@ class MidjourneyDiscordBridge {
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
+        if(ret == null) {
+            return null;
+        }
         ret.prompt = prompt;
         return ret;
     }
@@ -506,6 +522,9 @@ class MidjourneyDiscordBridge {
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
+        if(ret == null) {
+            return null;
+        }
         ret.prompt = prompt;
         return ret;
     }
