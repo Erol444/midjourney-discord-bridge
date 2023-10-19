@@ -167,6 +167,7 @@ class MidjourneyDiscordBridge {
             return;
         } else {
             // Image generation finished!
+            clearTimeout(item.timeout);
             item.resolve(img);
             this.queue.pop(index);
         }
@@ -176,7 +177,7 @@ class MidjourneyDiscordBridge {
         this.logger("Waiting for Discord message...");
         return new Promise((resolve) => {
             obj.resolve = resolve;
-            setTimeout(() => {
+            obj.timout = setTimeout(() => {
                 this.logger("Timeout waiting for Discord message (10 minutes)");
                 obj.resolve(null);
             }, 1000 * 60 * 10); // 10 minutes
