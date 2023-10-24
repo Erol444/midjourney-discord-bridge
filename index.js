@@ -224,20 +224,7 @@ class MidjourneyDiscordBridge {
             await this.loginPromise;
         }
         this.logger("Cancelling job for image:", this.currentJobObj.uuid.value);
-        const payload = this.buildPayload(3, "MJ::CancelJob::ByJobid::" + imaobj.uuid.valuegeUUID, this.currentJobObj);
-        // const payload = {
-        //     type: 3,
-        //     guild_id: this.GUILD_ID,
-        //     channel_id: this.MIDJOURNEY_BOT_CHANNEL,
-        //     message_flags: obj.uuid.flag,
-        //     message_id: obj.id,
-        //     application_id: "936929561302675456",
-        //     session_id: this.session_id,
-        //     data: {
-        //         component_type: 2,
-        //         custom_id: "MJ::CancelJob::ByJobid::" + imageUUID,
-        //     }
-        // };
+        const payload = this.buildPayload(3, "MJ::CancelJob::ByJobid::" + this.currentJobObj.uuid.value, this.currentJobObj);
         this.sendPaylod(payload);
         return;
     }
@@ -251,21 +238,7 @@ class MidjourneyDiscordBridge {
         await this.waitTwoOrThreeSeconds();
         this.logger("Variation image:", obj.uuid.value);
         const payload = this.buildPayload(3, "MJ::JOB::variation::" + selectedImage + "::" + obj.uuid.value, obj);
-        // const payload = {
-        //     type: 3,
-        //     guild_id: this.GUILD_ID,
-        //     channel_id: this.MIDJOURNEY_BOT_CHANNEL,
-        //     message_flags: obj.uuid.flag,
-        //     message_id: obj.id,
-        //     application_id: "936929561302675456",
-        //     session_id: this.session_id,
-        //     data: {
-        //         component_type: 2,
-        //         custom_id: "MJ::JOB::variation::" + selectedImage + "::" + imageUUID,
-        //     }
-        // };
         this.sendPaylod(payload);
-
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
@@ -285,21 +258,7 @@ class MidjourneyDiscordBridge {
         await this.waitTwoOrThreeSeconds();
         this.logger("Zoom out image:", obj.uuid.value);
         const payload = this.buildPayload(3, "MJ::Outpaint::50::1::" + obj.uuid.value + "::SOLO", obj);
-        // const payload = {
-        //     type: 3,
-        //     guild_id: this.GUILD_ID,
-        //     channel_id: this.MIDJOURNEY_BOT_CHANNEL,
-        //     message_flags: obj.uuid.flag,
-        //     message_id: obj.id,
-        //     application_id: "936929561302675456",
-        //     session_id: this.session_id,
-        //     data: {
-        //         component_type: 2,
-        //         custom_id: "MJ::Outpaint::50::1::" + imageUUID + "::SOLO"
-        //     }
-        // };
         this.sendPaylod(payload);
-
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
@@ -319,21 +278,7 @@ class MidjourneyDiscordBridge {
         await this.waitTwoOrThreeSeconds();
         this.logger("Reroll image:", obj.uuid.value);
         const payload = this.buildPayload(3, "MJ::JOB::reroll::0::" + obj.uuid.value + "::SOLO", obj);
-        // const payload = {
-        //     type: 3,
-        //     guild_id: this.GUILD_ID,
-        //     channel_id: this.MIDJOURNEY_BOT_CHANNEL,
-        //     message_flags: obj.uuid.flag,
-        //     message_id: obj.id,
-        //     application_id: "936929561302675456",
-        //     session_id: this.session_id,
-        //     data: {
-        //         component_type: 2,
-        //         custom_id: "MJ::JOB::reroll::0::" + imageUUID + "::SOLO",
-        //     }
-        // };
         this.sendPaylod(payload);
-
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
@@ -353,21 +298,7 @@ class MidjourneyDiscordBridge {
         }
         this.logger("Upscaling image #" + imageNum + " from ", obj.uuid.value);
         const payload = this.buildPayload(3, "MJ::JOB::upsample::" + imageNum + "::" + obj.uuid.value, obj);
-        // const payload = {
-        //     type: 3,
-        //     guild_id: this.GUILD_ID,
-        //     channel_id: this.MIDJOURNEY_BOT_CHANNEL,
-        //     message_flags: obj.uuid.flag,
-        //     message_id: obj.id,
-        //     application_id: "936929561302675456",
-        //     session_id: this.session_id,
-        //     data: {
-        //         component_type: 2,
-        //         custom_id: "MJ::JOB::upsample::" + selectedImage + "::" + imageUUID,
-        //     }
-        // };
         this.sendPaylod(payload);
-
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
@@ -418,7 +349,6 @@ class MidjourneyDiscordBridge {
         };
 
         this.sendPaylod(payload);
-
         let obj1 = { prompt: "info", cb: null };
         this.queue.push(obj1);
         return await this._waitForDiscordMsg(obj1);
@@ -459,7 +389,6 @@ class MidjourneyDiscordBridge {
             }
         }
     }
-
 
     async generateImage(prompt, callback = null) {
         /**
@@ -540,13 +469,7 @@ class MidjourneyDiscordBridge {
 
     logger(msg) {
         if (this.loggerCB == null) {
-            process.stdout.write("\n");
-            process.stdout.clearLine();
-            process.stdout.cursorTo(0);
-            process.stdout.write(msg);
-            process.stdout.moveCursor(0, -1);
-            process.stdout.cursorTo(0);
-            process.stdout.clearLine();
+            console.log("MJ-Discord Bridge Logger:", {msg});
         } else {
             this.loggerCB(msg);
         }
