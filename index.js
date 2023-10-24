@@ -127,7 +127,7 @@ class MidjourneyDiscordBridge {
                 if (this._findItem(e.message.content) != null) {
                     // wait for a bit then resend the payload
                     for (let i = 0; i < 10; i++) await this.waitTwoOrThreeSeconds();
-                    this.sendpaylod(this.lastPayload);
+                    this.sendPaylod(this.lastPayload);
                 }
             }
             return;
@@ -238,11 +238,9 @@ class MidjourneyDiscordBridge {
         //         custom_id: "MJ::CancelJob::ByJobid::" + imageUUID,
         //     }
         // };
-        this.sendpaylod(payload);
+        this.sendPaylod(payload);
         return;
     }
-
-
 
     async variation(obj, selectedImage, prompt, callback = null) {
         this.currentJobObj = obj;
@@ -266,7 +264,7 @@ class MidjourneyDiscordBridge {
         //         custom_id: "MJ::JOB::variation::" + selectedImage + "::" + imageUUID,
         //     }
         // };
-        this.sendpaylod(payload);
+        this.sendPaylod(payload);
 
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
@@ -300,7 +298,7 @@ class MidjourneyDiscordBridge {
         //         custom_id: "MJ::Outpaint::50::1::" + imageUUID + "::SOLO"
         //     }
         // };
-        this.sendpaylod(payload);
+        this.sendPaylod(payload);
 
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
@@ -334,7 +332,7 @@ class MidjourneyDiscordBridge {
         //         custom_id: "MJ::JOB::reroll::0::" + imageUUID + "::SOLO",
         //     }
         // };
-        this.sendpaylod(payload);
+        this.sendPaylod(payload);
 
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
@@ -368,7 +366,7 @@ class MidjourneyDiscordBridge {
         //         custom_id: "MJ::JOB::upsample::" + selectedImage + "::" + imageUUID,
         //     }
         // };
-        this.sendpaylod(payload);
+        this.sendPaylod(payload);
 
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
@@ -419,14 +417,14 @@ class MidjourneyDiscordBridge {
             }
         };
 
-        this.sendpaylod(payload);
+        this.sendPaylod(payload);
 
         let obj1 = { prompt: "info", cb: null };
         this.queue.push(obj1);
         return await this._waitForDiscordMsg(obj1);
     }
 
-    async sendpaylod(payload) {
+    async sendPaylod(payload) {
         if (!this.loggedIn) {
             await this.loginPromise;
         }
@@ -523,7 +521,7 @@ class MidjourneyDiscordBridge {
             }
         };
 
-        this.sendpaylod(payload);
+        this.sendPaylod(payload);
 
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
