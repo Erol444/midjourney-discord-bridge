@@ -2,7 +2,7 @@ const axios = require("axios");
 const Discordie = require("discordie");
 
 class MidjourneyDiscordBridge {
-    constructor(discord_token, guild_id, channel_id) {
+    constructor(discord_token, guild_id, channel_id, timeout = 10) {
         /**
          * @param {string} discord_token - Your discord token that has access to Midjourney bot
          */
@@ -23,6 +23,7 @@ class MidjourneyDiscordBridge {
         this.loginPromise = new Promise((resolve) => {
             this.loginResolver = resolve;
         });
+        this.timeout = timeout;
 
         this.client.Dispatcher.on("MESSAGE_CREATE", (e) => {
             const content = e.message.content;
@@ -160,7 +161,7 @@ class MidjourneyDiscordBridge {
             obj.timeout = setTimeout(() => {
                 this.logger("Timeout waiting for Discord message (10 minutes)");
                 obj.resolve(null);
-            }, 1000 * 60 * 10); // 10 minutes
+            }, 1000 * 60 * this.timeout); // 10 minutes timeout by default
         });
     }
 
@@ -271,8 +272,8 @@ class MidjourneyDiscordBridge {
 
     async upscaleImage(obj, imageNum, prompt, callback = null) {
         this.currentJobObj = obj;
-        this.logger("Waiting for a bit then calling for upscaled image...");
-        await this.waitTwoOrThreeSeconds();
+        // this.logger("Waiting for a bit then calling for upscaled image...");
+        // await this.waitTwoOrThreeSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
         }
