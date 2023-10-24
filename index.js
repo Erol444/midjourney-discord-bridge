@@ -7,20 +7,6 @@ class MidjourneyDiscordBridge {
          * @param {string} discord_token - Your discord token that has access to Midjourney bot
          */
 
-        const kb_input = process.stdin;
-        kb_input.setRawMode(true);
-        kb_input.resume();
-        kb_input.setEncoding('utf8');
-        kb_input.on('data', async (key) => {
-            // log the keypress
-            //console.log("key:", {key});
-            // esc key
-            if (key === '\u001b') {
-                // log keypress
-                console.log("esc key pressed");
-            }
-        });
-
         this.MIDJOURNEY_BOT_ID = "936929561302675456";
         this.MIDJOURNEY_BOT_CHANNEL = channel_id;
         this.GUILD_ID = guild_id;
@@ -78,11 +64,7 @@ class MidjourneyDiscordBridge {
     }
 
     _findItem(prompt) {
-        for (let i = 0; i < this.queue.length; i++) {
-            if (prompt.includes(this.queue[i].prompt)) {
-                return i;
-            }
-        }
+        for (let i = 0; i < this.queue.length; i++) if (prompt.includes(this.queue[i].prompt)) return i;
         return null;
     }
 
@@ -99,9 +81,7 @@ class MidjourneyDiscordBridge {
         if (e.message.attachments == null) return;
         if (e.message.author == null) return;
         // Not a DM and not from the bot itself
-        if (e.message.author.id != this.MIDJOURNEY_BOT_ID) {
-            return;
-        }
+        if (e.message.author.id != this.MIDJOURNEY_BOT_ID) return;
         if (e.data != null) {
             if (e.data.interaction != null) {
                 if (e.data.interaction.name == "info") {
