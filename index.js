@@ -63,7 +63,7 @@ class MidjourneyDiscordBridge {
         this.client.connect({ token: this.discord_token });
 
         this.client.Dispatcher.on(Events.GATEWAY_DISCONNECT, (e) => {
-            if(this.disconnectResolver != null) this.disconnectResolver();
+            if (this.disconnectResolver != null) this.disconnectResolver();
         });
     }
 
@@ -118,15 +118,15 @@ class MidjourneyDiscordBridge {
         let img = e.message.attachments[0];
         if (img === undefined) {
             if (
-            (e.message.content.includes("Bad response") || 
-            e.message.content.includes("Internal Error") || 
-            e.message.content.includes("There was an error processing your request.") || 
-            e.message.content.includes("Invlid Form Body")
-            ) && this.lastPayload != null) {
+                (e.message.content.includes("Bad response") ||
+                    e.message.content.includes("Internal Error") ||
+                    e.message.content.includes("There was an error processing your request.") ||
+                    e.message.content.includes("Invlid Form Body")
+                ) && this.lastPayload != null) {
                 // check to see if this is a bad response to a payload we sent
-                if(this._findItem(e.message.content) != null) {
+                if (this._findItem(e.message.content) != null) {
                     // wait for a bit then resend the payload
-                    for(let i = 0; i < 10; i++) await this.waitTwoOrThreeSeconds();
+                    for (let i = 0; i < 10; i++) await this.waitTwoOrThreeSeconds();
                     this.sendpaylod(this.lastPayload);
                 }
             }
@@ -156,7 +156,7 @@ class MidjourneyDiscordBridge {
         if (index == null) {
             return;
         }
-        
+
 
         let item = this.queue[index];
         if (update) {
@@ -177,7 +177,7 @@ class MidjourneyDiscordBridge {
         this.logger("Waiting for Discord message...");
         return new Promise((resolve) => {
             obj.resolve = resolve;
-            obj.timout = setTimeout(() => {
+            obj.timeout = setTimeout(() => {
                 this.logger("Timeout waiting for Discord message (10 minutes)");
                 obj.resolve(null);
             }, 1000 * 60 * 10); // 10 minutes
@@ -185,7 +185,7 @@ class MidjourneyDiscordBridge {
     }
 
     _waitForDiscordDisconnectg() {
-        if(!this.client.connected) {
+        if (!this.client.connected) {
             return;
         }
         return new Promise((resolve) => {
@@ -242,7 +242,7 @@ class MidjourneyDiscordBridge {
         return;
     }
 
-    
+
 
     async variation(obj, selectedImage, prompt, callback = null) {
         this.currentJobObj = obj;
@@ -271,7 +271,7 @@ class MidjourneyDiscordBridge {
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
-        if(ret == null) {
+        if (ret == null) {
             return null;
         }
         ret.prompt = prompt;
@@ -305,7 +305,7 @@ class MidjourneyDiscordBridge {
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
-        if(ret == null) {
+        if (ret == null) {
             return null;
         }
         ret.prompt = prompt;
@@ -339,7 +339,7 @@ class MidjourneyDiscordBridge {
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
-        if(ret == null) {
+        if (ret == null) {
             return null;
         }
         ret.prompt = prompt;
@@ -373,7 +373,7 @@ class MidjourneyDiscordBridge {
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
-        if(ret == null) {
+        if (ret == null) {
             return null;
         }
         ret.prompt = prompt;
@@ -528,7 +528,7 @@ class MidjourneyDiscordBridge {
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
-        if(ret == null) {
+        if (ret == null) {
             return null;
         }
         ret.prompt = prompt;
