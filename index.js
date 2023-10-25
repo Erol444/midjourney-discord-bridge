@@ -83,7 +83,7 @@ class MidjourneyDiscordBridge {
 
             // if the prompt is an exact match, return the index
             if(str2.includes(str1)) return i;
-            if(str1.includes(str2)) return i;
+            // if(str1.includes(str2)) return i;
             
             // fuzzy string matching, basically 5% of the prompt is allowed to be different, just in case MJ or Discord messes with the prompt.
             let dist = distance(str2, str1);
@@ -127,13 +127,13 @@ class MidjourneyDiscordBridge {
                 (e.message.content.includes("Bad response") ||
                     e.message.content.includes("Internal Error") ||
                     e.message.content.includes("There was an error processing your request.") ||
-                    e.message.content.includes("Invlid Form Body")
+                    e.message.content.includes("Invalid Form Body")
                 ) && this.lastPayload != null) {
                 // check to see if this is a bad response to a payload we sent
                 if (this._findItem(e.message.content) != null) {
                     // wait for a bit then resend the payload
                     for (let i = 0; i < 3; i++) await this.waitTwoOrThreeSeconds();
-                    this.sendPaylod(this.lastPayload);
+                    this.sendPayload(this.lastPayload);
                 }
             }
             return;
@@ -239,7 +239,7 @@ class MidjourneyDiscordBridge {
         }
         this.logger("Cancelling job for image:", this.currentJobObj.uuid.value);
         const payload = this.buildPayload(3, "MJ::CancelJob::ByJobid::" + this.currentJobObj.uuid.value, this.currentJobObj);
-        this.sendPaylod(payload);
+        this.sendPayload(payload);
         return;
     }
 
@@ -252,7 +252,7 @@ class MidjourneyDiscordBridge {
         await this.waitTwoOrThreeSeconds();
         this.logger("X4 upscale image:", obj.uuid.value);
         const payload = this.buildPayload(3, "MJ::JOB::upsample_v5_4x::1::" + obj.uuid.value + "::SOLO", obj);
-        this.sendPaylod(payload);
+        this.sendPayload(payload);
         let obj1 = { prompt: prompt, cb: callback, isX4Upscale: true };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
@@ -273,7 +273,7 @@ class MidjourneyDiscordBridge {
         await this.waitTwoOrThreeSeconds();
         this.logger("Variation image:", obj.uuid.value);
         const payload = this.buildPayload(3, "MJ::JOB::variation::" + selectedImage + "::" + obj.uuid.value, obj);
-        this.sendPaylod(payload);
+        this.sendPayload(payload);
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
@@ -293,7 +293,7 @@ class MidjourneyDiscordBridge {
         await this.waitTwoOrThreeSeconds();
         this.logger("Zoom out image:", obj.uuid.value);
         const payload = this.buildPayload(3, "MJ::Outpaint::50::1::" + obj.uuid.value + "::SOLO", obj);
-        this.sendPaylod(payload);
+        this.sendPayload(payload);
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
@@ -313,7 +313,7 @@ class MidjourneyDiscordBridge {
         await this.waitTwoOrThreeSeconds();
         this.logger("Reroll image:", obj.uuid.value);
         const payload = this.buildPayload(3, "MJ::JOB::reroll::0::" + obj.uuid.value + "::SOLO", obj);
-        this.sendPaylod(payload);
+        this.sendPayload(payload);
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
@@ -333,7 +333,7 @@ class MidjourneyDiscordBridge {
         }
         this.logger("Upscaling image #" + imageNum + " from ", obj.uuid.value);
         const payload = this.buildPayload(3, "MJ::JOB::upsample::" + imageNum + "::" + obj.uuid.value, obj);
-        this.sendPaylod(payload);
+        this.sendPayload(payload);
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
@@ -383,13 +383,13 @@ class MidjourneyDiscordBridge {
             }
         };
 
-        this.sendPaylod(payload);
+        this.sendPayload(payload);
         let obj1 = { prompt: "info", cb: null };
         this.queue.push(obj1);
         return await this._waitForDiscordMsg(obj1);
     }
 
-    async sendPaylod(payload) {
+    async sendPayload(payload) {
         if (!this.loggedIn) {
             await this.loginPromise;
         }
@@ -485,7 +485,7 @@ class MidjourneyDiscordBridge {
             }
         };
 
-        this.sendPaylod(payload);
+        this.sendPayload(payload);
 
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
