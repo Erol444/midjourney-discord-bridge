@@ -1,6 +1,6 @@
 const axios = require("axios");
 const Discordie = require("discordie");
-const {distance} = require("fastest-levenshtein");
+const { distance } = require("fastest-levenshtein");
 
 class MidjourneyDiscordBridge {
     constructor(discord_token, guild_id, channel_id, timeout = 10) {
@@ -74,11 +74,21 @@ class MidjourneyDiscordBridge {
             // either Discord or Midjourney is removing them and screwing things up
             let str1 = this.queue[i].prompt;
             let str2 = prompt;
+            if (typeof str1 !== "string" || typeof str2 !== "string") return null;
             str1 = str1.replace("  ", " ");
             str2 = str2.replace("  ", " ");
+            str2 = str2.replace("Open on website for full quality", "");
+            str1 = str1.replace("Open on website for full quality", "");
+            str1 = str1.replace("(relaxed)", "");
+            str2 = str2.replace("(relaxed)", "");
+            str1 = str1.replace("(fast)", "");
+            str2 = str2.replace("(fast)", "");
+            str1 = str1.replace("(Waiting to start)", "");
+            str2 = str2.replace("(Waiting to start)", "");
+            
             let dist = distance(str2, str1);
-            // fuzzy string matching, basically 1% of the prompt is allowed to be different, just in case MJ or Discord messes with the prompt.
-            if(dist <= (prompt.length - this.queue[i].prompt.length + (prompt.length * 0.01))) return i;
+            // fuzzy string matching, basically 5% of the prompt is allowed to be different, just in case MJ or Discord messes with the prompt.
+            if (dist <= (prompt.length - this.queue[i].prompt.length + (prompt.length * 0.5))) return i;
         }
         return null;
     }
@@ -173,11 +183,19 @@ class MidjourneyDiscordBridge {
     _waitForDiscordMsg(obj) {
         this.logger("Waiting for Discord message...");
         return new Promise((resolve) => {
-            obj.resolve = resolve;
-            obj.timeout = setTimeout(() => {
-                this.logger("Timeout waiting for Discord message (10 minutes)");
-                obj.resolve(null);
-            }, 1000 * 60 * this.timeout); // 10 minutes timeout by default
+            if (obj.isX4Upscale === true) {
+                obj.resolve = resolve;
+                obj.timeout = setTimeout(() => {
+                    this.logger("Timeout waiting for Discord message (30 minutes)");
+                    obj.resolve(null);
+                }, 1000 * 60 * ((this.timeout>=30)?this.timeout:30)); // 30 minute minimum timeout for x4 upscale
+            } else {
+                obj.resolve = resolve;
+                obj.timeout = setTimeout(() => {
+                    this.logger("Timeout waiting for Discord message (10 minutes)");
+                    obj.resolve(null);
+                }, 1000 * 60 * this.timeout); // 10 minutes timeout by default
+            }
         });
     }
 
@@ -224,6 +242,26 @@ class MidjourneyDiscordBridge {
         const payload = this.buildPayload(3, "MJ::CancelJob::ByJobid::" + this.currentJobObj.uuid.value, this.currentJobObj);
         this.sendPaylod(payload);
         return;
+    }
+
+    async x4_upscale(obj, prompt, callback = null) {
+        this.currentJobObj = obj;
+        if (!this.loggedIn) {
+            await this.loginPromise;
+        }
+        this.logger("Waiting for a bit then calling x4 upscale...");
+        await this.waitTwoOrThreeSeconds();
+        this.logger("X4 upscale image:", obj.uuid.value);
+        const payload = this.buildPayload(3, "MJ::JOB::upsample_v5_4x::1::" + obj.uuid.value + "::SOLO", obj);
+        this.sendPaylod(payload);
+        let obj1 = { prompt: prompt, cb: callback, isX4Upscale: true };
+        this.queue.push(obj1);
+        let ret = await this._waitForDiscordMsg(obj1);
+        if (ret == null) {
+            return null;
+        }
+        ret.prompt = prompt;
+        return ret;
     }
 
     async variation(obj, selectedImage, prompt, callback = null) {
