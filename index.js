@@ -70,24 +70,23 @@ class MidjourneyDiscordBridge {
     _findItem(prompt) {
         // console.log("Finding prompt:", prompt);
         for (let i = 0; i < this.queue.length; i++) {
-            // we have to make sure that there aren't any double spaces in either string because apparently 
-            // either Discord or Midjourney is removing them and screwing things up
             let str1 = this.queue[i].prompt;
             let str2 = prompt;
-            if (typeof str1 !== "string" || typeof str2 !== "string") return null;
-            str1 = str1.replace("  ", " ");
-            str2 = str2.replace("  ", " ");
-            str2 = str2.replace("Open on website for full quality", "");
-            str1 = str1.replace("Open on website for full quality", "");
-            str1 = str1.replace("(relaxed)", "");
-            str2 = str2.replace("(relaxed)", "");
-            str1 = str1.replace("(fast)", "");
-            str2 = str2.replace("(fast)", "");
-            str1 = str1.replace("(Waiting to start)", "");
-            str2 = str2.replace("(Waiting to start)", "");
             
-            let dist = distance(str2, str1);
+            // in case one of the strings isn't really a string, just return null
+            if (typeof str1 !== "string" || typeof str2 !== "string") return null;
+
+            // we have to make sure that there aren't any double spaces in either string because apparently 
+            // either Discord or Midjourney is removing them and screwing things up
+            str1 = str1.replaceAll("  ", " ");
+            str2 = str2.replaceAll("  ", " ");
+
+            // if the prompt is an exact match, return the index
+            if(str2.includes(str1)) return i;
+            if(str1.includes(str2)) return i;
+            
             // fuzzy string matching, basically 5% of the prompt is allowed to be different, just in case MJ or Discord messes with the prompt.
+            let dist = distance(str2, str1);
             if (dist <= (prompt.length - this.queue[i].prompt.length + (prompt.length * 0.5))) return i;
         }
         return null;
@@ -155,7 +154,7 @@ class MidjourneyDiscordBridge {
 
         img.uuid.value = uuid
         img.id = e.message.id;
-        img.prompt = e.message.content.substring(2, e.message.content.lastIndexOf("** "));
+        img.prompt = e.message.content.substring(2, e.message.content.lastIndexOf("**"));
 
         // let prompt_msg = e.message.content.substring(2); // Remove first two characters **
         //console.log("prompt_msg:", img.prompt);
