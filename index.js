@@ -1,10 +1,13 @@
 const axios = require("axios");
 const Discordie = require("discordie");
+const {distance} = require("fastest-levenshtein");
 
 class MidjourneyDiscordBridge {
     constructor(discord_token, guild_id, channel_id, timeout = 10) {
         /**
          * @param {string} discord_token - Your discord token that has access to Midjourney bot
+         * @param {int} guild_id - The guild ID that the bot is in
+         * @param {int} channel_id - The channel ID that the bot is in
          */
 
         this.MIDJOURNEY_BOT_ID = "936929561302675456";
@@ -65,9 +68,21 @@ class MidjourneyDiscordBridge {
     }
 
     _findItem(prompt) {
-        for (let i = 0; i < this.queue.length; i++) if (prompt.includes(this.queue[i].prompt)) return i;
+        // console.log("Finding prompt:", prompt);
+        for (let i = 0; i < this.queue.length; i++) {
+            // we have to make sure that there aren't any double spaces in either string because apparently 
+            // either Discord or Midjourney is removing them and screwing things up
+            let str1 = this.queue[i].prompt;
+            let str2 = prompt;
+            str1 = str1.replace("  ", " ");
+            str2 = str2.replace("  ", " ");
+            let dist = distance(str2, str1);
+            // fuzzy string matching, basically 1% of the prompt is allowed to be different, just in case MJ or Discord messes with the prompt.
+            if(dist <= (prompt.length - this.queue[i].prompt.length + (prompt.length * 0.01))) return i;
+        }
         return null;
     }
+
 
     async _newDiscordMsg(e, update) {
         /**
@@ -97,6 +112,7 @@ class MidjourneyDiscordBridge {
         }
 
         let img = e.message.attachments[0];
+        // this.logger(JSON.stringify(e,null,2));
         if (img === undefined) {
             if (
                 (e.message.content.includes("Bad response") ||
@@ -107,7 +123,7 @@ class MidjourneyDiscordBridge {
                 // check to see if this is a bad response to a payload we sent
                 if (this._findItem(e.message.content) != null) {
                     // wait for a bit then resend the payload
-                    for (let i = 0; i < 10; i++) await this.waitTwoOrThreeSeconds();
+                    for (let i = 0; i < 3; i++) await this.waitTwoOrThreeSeconds();
                     this.sendPaylod(this.lastPayload);
                 }
             }
@@ -131,9 +147,9 @@ class MidjourneyDiscordBridge {
         img.id = e.message.id;
         img.prompt = e.message.content.substring(2, e.message.content.lastIndexOf("** "));
 
-        let prompt_msg = e.message.content.substring(2); // Remove first two characters **
+        // let prompt_msg = e.message.content.substring(2); // Remove first two characters **
         //console.log("prompt_msg:", img.prompt);
-        let index = this._findItem(prompt_msg);
+        let index = this._findItem(e.message.content);
         if (index == null) {
             return;
         }
@@ -211,6 +227,7 @@ class MidjourneyDiscordBridge {
     }
 
     async variation(obj, selectedImage, prompt, callback = null) {
+        // console.log("variation called\n", {obj}, {selectedImage}, {prompt})
         this.currentJobObj = obj;
         if (!this.loggedIn) {
             await this.loginPromise;
@@ -272,8 +289,8 @@ class MidjourneyDiscordBridge {
 
     async upscaleImage(obj, imageNum, prompt, callback = null) {
         this.currentJobObj = obj;
-        // this.logger("Waiting for a bit then calling for upscaled image...");
-        // await this.waitTwoOrThreeSeconds();
+        this.logger("Waiting for a bit then calling for upscaled image...");
+        await this.waitTwoOrThreeSeconds();
         if (!this.loggedIn) {
             await this.loginPromise;
         }
@@ -450,7 +467,7 @@ class MidjourneyDiscordBridge {
 
     logger(msg) {
         if (this.loggerCB == null) {
-            console.log("MJ-Discord Bridge Logger:", {msg});
+            console.log("MJ-Discord Bridge Logger:", { msg });
         } else {
             this.loggerCB(msg);
         }
