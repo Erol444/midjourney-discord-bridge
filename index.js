@@ -86,51 +86,52 @@ class MidjourneyDiscordBridge {
             // if(str1.includes(str2)) return i;
             
             // fuzzy string matching, basically 5% of the prompt is allowed to be different, just in case MJ or Discord messes with the prompt.
-            let dist = distance(str2, str1);
+            let dist = distance(str2, str1); // calculate levenshtein distance
             if (dist <= (prompt.length - this.queue[i].prompt.length + (prompt.length * 0.5))) return i;
         }
         return null;
     }
 
 
-    async _newDiscordMsg(e, update) {
+    async _newDiscordMsg(msgObj, update) {
         /**
          * Handle a new message from Discord.
+         * @param {object} e - The Discord message object
+         * @param {bool} update - Whether or not this is an update to an existing message
          */
 
-        if (e == null) return;
-        if (e.socket == null) return;
-        this.session_id = e.socket.sessionId;
-        if (e.message == null) return;
-        if (e.message.content == null) return;
-        if (e.message.attachments == null) return;
-        if (e.message.author == null) return;
+        if (msgObj == null) return;
+        if (msgObj.socket == null) return;
+        this.session_id = msgObj.socket.sessionId;
+        if (msgObj.message == null) return;
+        if (msgObj.message.content == null) return;
+        if (msgObj.message.attachments == null) return;
+        if (msgObj.message.author == null) return;
         // Not a DM and not from the bot itself
-        if (e.message.author.id != this.MIDJOURNEY_BOT_ID) return;
-        if (e.data != null) {
-            if (e.data.interaction != null) {
-                if (e.data.interaction.name == "info") {
+        if (msgObj.message.author.id != this.MIDJOURNEY_BOT_ID) return;
+        if (msgObj.data != null) {
+            if (msgObj.data.interaction != null) {
+                if (msgObj.data.interaction.name == "info") {
                     let obj = this.queue[0];
                     if (obj == null) return;
                     if (obj.prompt != "info") return;
-                    obj.resolve(e.data);
+                    obj.resolve(msgObj.data);
                     this.queue.pop(0);
                     return;
                 }
             }
         }
 
-        let img = e.message.attachments[0];
-        // this.logger(JSON.stringify(e,null,2));
+        let img = msgObj.message.attachments[0];
         if (img === undefined) {
             if (
-                (e.message.content.includes("Bad response") ||
-                    e.message.content.includes("Internal Error") ||
-                    e.message.content.includes("There was an error processing your request.") ||
-                    e.message.content.includes("Invalid Form Body")
+                (msgObj.message.content.includes("Bad response") ||
+                    msgObj.message.content.includes("Internal Error") ||
+                    msgObj.message.content.includes("There was an error processing your request.") ||
+                    msgObj.message.content.includes("Invalid Form Body")
                 ) && this.lastPayload != null) {
                 // check to see if this is a bad response to a payload we sent
-                if (this._findItem(e.message.content) != null) {
+                if (this._findItem(msgObj.message.content) != null) {
                     // wait for a bit then resend the payload
                     for (let i = 0; i < 3; i++) await this.waitTwoOrThreeSeconds();
                     this.sendPayload(this.lastPayload);
@@ -153,12 +154,12 @@ class MidjourneyDiscordBridge {
         }
 
         img.uuid.value = uuid
-        img.id = e.message.id;
-        img.prompt = e.message.content.substring(2, e.message.content.lastIndexOf("**"));
+        img.id = msgObj.message.id;
+        img.prompt = msgObj.message.content.substring(2, msgObj.message.content.lastIndexOf("**"));
 
         // let prompt_msg = e.message.content.substring(2); // Remove first two characters **
         //console.log("prompt_msg:", img.prompt);
-        let index = this._findItem(e.message.content);
+        let index = this._findItem(msgObj.message.content);
         if (index == null) {
             return;
         }
@@ -167,7 +168,7 @@ class MidjourneyDiscordBridge {
         let item = this.queue[index];
         if (update) {
             if (item.cb !== null) {
-                let progress = this._getProgress(e.message.content);
+                let progress = this._getProgress(msgObj.message.content);
                 item.cb(img.url, progress);
             }
             return;
@@ -198,7 +199,7 @@ class MidjourneyDiscordBridge {
         });
     }
 
-    _waitForDiscordDisconnectg() {
+    _waitForDiscordDisconnect() {
         if (!this.client.connected) {
             return;
         }
@@ -214,6 +215,12 @@ class MidjourneyDiscordBridge {
     };
 
     buildPayload(type, custom_id, obj) {
+        /**
+         * Build a payload to send to Discord.
+         * @param {int} type - The type of payload to send. Get this by analyzing Discord using F12
+         * @param {string} custom_id - The custom ID to send to Discord
+         * @param {object} obj - The object returned from generateImage
+         */
         const payload = {
             type: type,
             guild_id: this.GUILD_ID,
@@ -231,6 +238,9 @@ class MidjourneyDiscordBridge {
     }
 
     async cancelJob() {
+        /**
+         * Cancel the current job.
+        */
         if (this.currentJobObj == null) {
             return;
         }
@@ -244,6 +254,12 @@ class MidjourneyDiscordBridge {
     }
 
     async x4_upscale(obj, prompt, callback = null) {
+        /**
+         * Call for a x4 upscale of the image from the bot.
+         * @param {object} obj - The object returned from generateImage
+         * @param {string} prompt - The prompt used to generate the image
+         * @param {function} callback - Optional callback function that gets called each time MJ updates the initial post with a progress update
+         */
         this.currentJobObj = obj;
         if (!this.loggedIn) {
             await this.loginPromise;
@@ -264,7 +280,13 @@ class MidjourneyDiscordBridge {
     }
 
     async variation(obj, selectedImage, prompt, callback = null) {
-        // console.log("variation called\n", {obj}, {selectedImage}, {prompt})
+        /**
+         * Call for a variation of the image from the bot.
+         * @param {object} obj - The object returned from generateImage
+         * @param {int} selectedImage - The image number to use for the variation
+         * @param {string} prompt - The prompt used to generate the image
+         * @param {function} callback - Optional callback function that gets called each time MJ updates the initial post with a progress update
+         */
         this.currentJobObj = obj;
         if (!this.loggedIn) {
             await this.loginPromise;
@@ -285,6 +307,12 @@ class MidjourneyDiscordBridge {
     }
 
     async zoomOut(obj, prompt, callback = null) {
+        /**
+         * Call for a zoom out of the image from the bot.
+         * @param {object} obj - The object returned from generateImage
+         * @param {string} prompt - The prompt used to generate the image
+         * @param {function} callback - Optional callback function that gets called each time MJ updates the initial post with a progress update
+         */
         this.currentJobObj = obj;
         if (!this.loggedIn) {
             await this.loginPromise;
@@ -305,6 +333,12 @@ class MidjourneyDiscordBridge {
     }
 
     async rerollImage(obj, prompt, callback = null) {
+        /**
+         * Call for a reroll of the image from the bot.
+         * @param {object} obj - The object returned from generateImage
+         * @param {string} prompt - The prompt used to generate the image
+         * @param {function} callback - Optional callback function that gets called each time MJ updates the initial post with a progress update
+         */
         this.currentJobObj = obj;
         if (!this.loggedIn) {
             await this.loginPromise;
@@ -325,6 +359,13 @@ class MidjourneyDiscordBridge {
     }
 
     async upscaleImage(obj, imageNum, prompt, callback = null) {
+        /**
+         * Call for an upscaled image from the bot.
+         * @param {object} obj - The object returned from generateImage
+         * @param {int} imageNum - The image number to upscale
+         * @param {string} prompt - The prompt used to generate the image
+         * @param {function} callback - Optional callback function that gets called each time MJ updates the initial post with a progress update
+         */
         this.currentJobObj = obj;
         this.logger("Waiting for a bit then calling for upscaled image...");
         await this.waitTwoOrThreeSeconds();
@@ -345,6 +386,9 @@ class MidjourneyDiscordBridge {
     }
 
     async getInfo() {
+        /**
+         * Run the /info command on the MJ bot to get info about your account.
+         */
         if (!this.loggedIn) {
             await this.loginPromise;
         }
@@ -386,6 +430,10 @@ class MidjourneyDiscordBridge {
     }
 
     async sendPayload(payload) {
+        /**
+         * Send a payload to Discord.
+         * @param {object} payload - The payload to send to Discord
+         */
         if (!this.loggedIn) {
             await this.loginPromise;
         }
@@ -426,7 +474,7 @@ class MidjourneyDiscordBridge {
         /**
          * Generate image from the prompt.
          * @param {string} prompt - What image you'd like to see
-         * @param {function} callback - Optional callback function to call when image is ready
+         * @param {function} callback - Optional callback function that gets called each time MJ updates the initial post with a progress update
          * @returns {string} - The image URL
          */
         if (!this.loggedIn) {
@@ -492,7 +540,7 @@ class MidjourneyDiscordBridge {
 
     async close() {
         this.client.disconnect();
-        return await this._waitForDiscordDisconnectg();
+        return await this._waitForDiscordDisconnect();
     }
 
     logger(msg) {
