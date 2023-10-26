@@ -355,7 +355,7 @@ class MidjourneyDiscordBridge {
             channel_id: this.MIDJOURNEY_BOT_CHANNEL,
             session_id: this.session_id,
             data: {
-                version: "1118961510123847776",
+                version: "1166847114203123799",
                 id: "972289487818334209",
                 name: "info",
                 type: 1,
@@ -363,18 +363,14 @@ class MidjourneyDiscordBridge {
                 application_command: {
                     id: "972289487818334209",
                     application_id: "936929561302675456",
-                    version: "1118961510123847776",
+                    version: "1166847114203123799",
                     default_member_permissions: null,
                     type: 1,
                     nsfw: false,
                     name: "info",
                     description: "View information about your profile.",
                     dm_permission: true,
-                    contexts: [
-                        0,
-                        1,
-                        2
-                    ],
+                    contexts: null,
                     integration_types: [
                         0
                     ]
@@ -406,14 +402,15 @@ class MidjourneyDiscordBridge {
                 payload,
                 { headers }
             );
-            this.logger(response.data);
         } catch (error) {
             if (error.response) {
                 // The request was made, and the server responded with a status code that falls out of the range of 2xx
                 console.error(
                     "Error response:",
                     error.response.status,
-                    error.response.data
+                    error.response.data,
+                    "\n\nJSON.stringify:\n",
+                    JSON.stringify(error, null, 2)
                 );
             } else if (error.request) {
                 // The request was made, but no response was received
@@ -443,7 +440,7 @@ class MidjourneyDiscordBridge {
             channel_id: this.MIDJOURNEY_BOT_CHANNEL,
             session_id: this.session_id,
             data: {
-                version: "1118961510123847772",
+                version: "1166847114203123795",
                 id: "938956540159881230",
                 name: "imagine",
                 type: 1,
@@ -457,18 +454,14 @@ class MidjourneyDiscordBridge {
                 application_command: {
                     id: "938956540159881230",
                     application_id: "936929561302675456",
-                    version: "1118961510123847772",
+                    version: "1166847114203123795",
                     default_member_permissions: null,
                     type: 1,
                     nsfw: true,
                     name: "imagine",
                     description: "Create images with Midjourney",
                     dm_permission: true,
-                    contexts: [
-                        0,
-                        1,
-                        2
-                    ],
+                    contexts: null,
                     integration_types: [
                         0
                     ],
@@ -484,7 +477,7 @@ class MidjourneyDiscordBridge {
                 attachments: []
             }
         };
-
+        
         this.sendPayload(payload);
 
         let obj1 = { prompt: prompt, cb: callback };
