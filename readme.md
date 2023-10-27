@@ -31,7 +31,8 @@ function img_update(img_url, progress) {
 async function main() {
     const mj = new MidjourneyDiscordBridge(discord_token, guild_id/*server ID*/, channel_id, timeout);
 
-    // Calls the generateImage function and returns an object with the image url and other information needed to call other functions
+    // Calls the generateImage function and returns an object with the image url and other 
+    // information needed to call other functions
     const grid_img_obj = await mj.generateImage(
       'Tiny astronaut standing on a tiny round moon, cartoon',
       callback=img_update // Optional
@@ -43,7 +44,8 @@ async function main() {
     const response = await axios.get(img_url, { responseType: 'arraybuffer' });
     await sharp(response.data).toFile('output.png');
     
-    // Calls for an upscaled image from Midjourney using the object returned from generateImage as a reference
+    // Calls for an upscaled image from Midjourney using the object returned from 
+    // generateImage as a reference
     const upscale_img_obj = await mj.upscaleImage(
       grid_img_obj, // must be an object returned from generateImage
       1, // must be an integer between 1 and 4, representing the image to upscale
@@ -55,7 +57,19 @@ async function main() {
     // Do something with the image
     const response = await axios.get(img_url, { responseType: 'arraybuffer' });
     await sharp(response.data).toFile('output.png');
+
+    // This will print the info that Midjourney returns from the /info command.
+    // It's formatted in Discord's markdown so you'll need to parse it to get useful information
+    // about timestamps, etc. ChatGPT can help with this. ;)
+    // But just printing it directly still gives you a good idea of what's going on.
+    const info = await mj.getInfo();
+    console.log(info); 
+
+    // Close the connection to the Discord bot
     mj.close()
+
+    // Functions for calling for variations, zoom-outs, rerolls, and X4 upscales are also available.
+    // See the JSDoc for more information. 
 }
 
 main();

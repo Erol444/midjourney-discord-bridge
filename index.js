@@ -147,7 +147,7 @@ class MidjourneyDiscordBridge {
                     let obj = this.queue[index];
                     if (obj == null) return;
                     if (obj.prompt != "info") return;
-                    obj.resolve(msgObj.data);
+                    obj.resolve(msgObj.data.embeds[0].description);
                     clearTimeout(obj.timeout);
                     this.queue.splice(index, 1);
                     return;
