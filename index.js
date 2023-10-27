@@ -1,6 +1,5 @@
 const axios = require("axios");
 const Discordie = require("discordie");
-// const { distance } = require("fastest-levenshtein");
 const fs = require("fs");
 
 class MidjourneyDiscordBridge {

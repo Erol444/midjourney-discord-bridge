@@ -8,7 +8,7 @@ MidjourneyDiscordBridge is a Node.js library for interacting with the [Midjourne
 
 ### Contributors
 
-[GitHub: AndrewMcDan](https://github.com/andrewmcdan)
+[GitHub: AndrewMcDan](https://github.com/andrewmcdan) - See [MidJourneyAutomation](https://github.com/andrewmcdan/MidJourneyAutomation) for a project that uses most of the functions of this library.
 
 ## Demo
 
@@ -69,7 +69,7 @@ async function main() {
     mj.close()
 
     // Functions for calling for variations, zoom-outs, rerolls, and X4 upscales are also available.
-    // See the JSDoc for more information. 
+    // See the JSDoc in index.js for more information. 
 }
 
 main();
