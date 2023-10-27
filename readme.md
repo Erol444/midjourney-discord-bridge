@@ -6,6 +6,10 @@ MidjourneyDiscordBridge is a Node.js library for interacting with the [Midjourne
 
 **Note:** This unofficial API library is not endorsed by Midjourney or Discord and violates their Terms of Service. Use it at your own risk; the creator assumes no liability for any consequences. Please adhere to each platform's ToS and exercise caution with unofficial resources.
 
+### Contributors
+
+[GitHub: AndrewMcDan](https://github.com/andrewmcdan)
+
 ## Demo
 
 ![Demo GIF](https://user-images.githubusercontent.com/18037362/236650796-afaefb1f-af36-4185-a1f9-29f7106c39e2.gif)
@@ -25,13 +29,28 @@ function img_update(img_url, progress) {
 }
 
 async function main() {
-    const mj = new MidjourneyDiscordBridge(discord_token='my_discord_token');
+    const mj = new MidjourneyDiscordBridge(discord_token, guild_id/*server ID*/, channel_id, timeout);
 
-    const img_url = await mj.generateImage(
+    // Calls the generateImage function and returns an object with the image url and other information needed to call other functions
+    const grid_img_obj = await mj.generateImage(
       'Tiny astronaut standing on a tiny round moon, cartoon',
       callback=img_update // Optional
     );
-    console.log("Midjourney image generation completed:", img_url);
+
+    let img_url = grid_img_obj.url;
+
+    // Do something with the image
+    const response = await axios.get(img_url, { responseType: 'arraybuffer' });
+    await sharp(response.data).toFile('output.png');
+    
+    // Calls for an upscaled image from Midjourney using the object returned from generateImage as a reference
+    const upscale_img_obj = await mj.upscaleImage(
+      grid_img_obj, // must be an object returned from generateImage
+      1, // must be an integer between 1 and 4, representing the image to upscale
+      callback=img_update // Optional
+    );
+
+    img_url = upscale_img_obj.url;
 
     // Do something with the image
     const response = await axios.get(img_url, { responseType: 'arraybuffer' });
