@@ -1,6 +1,7 @@
 const axios = require("axios");
 const Discordie = require("discordie");
-const { distance } = require("fastest-levenshtein");
+// const { distance } = require("fastest-levenshtein");
+const fs = require("fs");
 
 class MidjourneyDiscordBridge {
     constructor(discord_token, guild_id, channel_id, timeout = 10) {
@@ -40,13 +41,11 @@ class MidjourneyDiscordBridge {
         this.client.Dispatcher.on("MESSAGE_UPDATE", (e) => this._newDiscordMsg(e, true));
 
         this.client.Dispatcher.on(Events.GATEWAY_READY, e => {
-            //this.logger("\nConnected to the Discord as: " + this.client.User.username);
             this.loggedIn = true;
             this.loginResolver(); // Call the stored resolve function
         });
 
         this.client.Dispatcher.on(Events.DISCONNECTED, e => {
-            //this.logger('Disconnected from Discord. Reconnecting...');
             this.client.connect({ token: this.discord_token });
         });
 
@@ -58,42 +57,61 @@ class MidjourneyDiscordBridge {
     }
 
     _getProgress(str) {
+        // finds the progress indicator in the string
         const regex = /\((\d+)%\)/;
         const match = str.match(regex);
         if (match) {
-            return match[1];
+            return match[1] + "%";
         } else {
-            return 100;
+            if (str.includes("Waiting to start")) return "Waiting to start";
+            if (str.includes("Midjourney bot is thinking")) return "Midjourney bot is thinking";
+            if (str.includes("Job queued")) {
+                // In the case that the job is queued, we need to adjust the timeout  because it's going to take longer than normal
+                clearTimeout(this.queue[0].timeout);
+                this.queue[0].timeout = setTimeout(() => {
+                    this.logger("Timeout waiting for Discord message (10 minutes)");
+                    this.queue[0].resolve(null);
+                }, 1000 * 60 * this.timeout * 2); // set the timeout to double the normal timeout. This way if the job is queued, we'll wait for 20 minutes (default) instead of 10
+                return "Job Queued";
+            }
+            // if we get here, we don't know what the progress is, so just return "In Progress"
+            return "In Progress";
         }
     }
 
     _findItem(prompt) {
-        // console.log("Finding prompt:", prompt);
         for (let i = 0; i < this.queue.length; i++) {
             let str1 = this.queue[i].prompt;
             let str2 = prompt;
-            
+
             // in case one of the strings isn't really a string, just return null
             if (typeof str1 !== "string" || typeof str2 !== "string") return null;
 
-            // we have to make sure that there aren't any double spaces in either string because apparently 
+            // we have to make sure that there aren't any double/triple spaces in either string because apparently 
             // either Discord or Midjourney is removing them and screwing things up
-            str1 = str1.replaceAll("  ", " ");
-            str2 = str2.replaceAll("  ", " ");
+            // str1 = str1.replaceAll("  ", " ");
+            // str2 = str2.replaceAll("  ", " ");
+            // str1 = str1.replaceAll("   ", " ");
+            // str2 = str2.replaceAll("   ", " ");
+
+            let regex = / +/g;
+            let matches = str1.match(regex);
+            if (matches != null) {
+                str1 = str1.replace(regex, " ");
+            }
+            matches = str2.match(regex);
+            if (matches != null) {
+                str2 = str2.replace(regex, " ");
+            }
 
             // if the prompt is an exact match, return the index
-            if(str2.includes(str1)) return i;
-            // if(str1.includes(str2)) return i;
-            
-            // fuzzy string matching, basically 5% of the prompt is allowed to be different, just in case MJ or Discord messes with the prompt.
-            let dist = distance(str2, str1); // calculate levenshtein distance
-            if (dist <= (prompt.length - this.queue[i].prompt.length + (prompt.length * 0.5))) return i;
+            if (str2.includes(str1)) return i;
         }
         return null;
     }
 
 
-    async _newDiscordMsg(msgObj, update) {
+    async _newDiscordMsg(msgObj, isUpdate) {
         /**
          * Handle a new message from Discord.
          * @param {object} e - The Discord message object
@@ -104,10 +122,9 @@ class MidjourneyDiscordBridge {
         if (msgObj.socket == null) return;
         this.session_id = msgObj.socket.sessionId;
         if (msgObj.message == null) return;
-        if (msgObj.message.content == null) return;
-        if (msgObj.message.attachments == null) return;
+        if (msgObj.message.content === undefined) return;
+        if (msgObj.message.attachments === undefined) return;
         if (msgObj.message.author == null) return;
-        // Not a DM and not from the bot itself
         if (msgObj.message.author.id != this.MIDJOURNEY_BOT_ID) return;
         if (msgObj.data != null) {
             if (msgObj.data.interaction != null) {
@@ -121,8 +138,10 @@ class MidjourneyDiscordBridge {
                 }
             }
         }
-
+        let isWaitingToStart = false;
+        let isQueued = false;
         let img = msgObj.message.attachments[0];
+        let msgObjContent = "";
         if (img === undefined) {
             if (
                 (msgObj.message.content.includes("Bad response") ||
@@ -136,40 +155,61 @@ class MidjourneyDiscordBridge {
                     for (let i = 0; i < 3; i++) await this.waitTwoOrThreeSeconds();
                     this.sendPayload(this.lastPayload);
                 }
+                return;
+            } else if (msgObj.message.content.includes("Waiting to start")) {
+                isWaitingToStart = true;
+                msgObjContent = msgObj.message.content;
+            } else if (msgObj.message.embeds.length > 0) { // "Job queued" message has weird formatting, so we have to check for it here
+                if (msgObj.message.embeds[0].title.includes("Job queued")) {
+                    isQueued = true;
+                    msgObjContent = "**" + msgObj.message.embeds[0].footer.text.substring(8) + "** Job queued **";
+                }else{
+                    msgObjContent = msgObj.message.content;
+                }
+            } else {
+                return;
             }
-            return;
+        }else{
+            msgObjContent = msgObj.message.content;
         }
 
-        const regexString = "([A-Za-z0-9]+(-[A-Za-z0-9]+)+)";
-        const regex = new RegExp(regexString);
-        const matches = regex.exec(img.url);
-        let uuid = "";
-        img.uuid = {};
-        img.uuid.flag = 0;
-        if (matches[0] == "ephemeral-attachments") {
-            uuid = img.url.substring(img.url.indexOf(".png?") - 36, img.url.indexOf(".png?"));
-            img.uuid.flag = 64;
-        } else {
-            uuid = matches[0];
+        // if we're waiting to start or queued, we don't have an image yet, so we need to find the prompt
+        if (!isWaitingToStart && !isQueued && img !== undefined) {
+            const regexString = "([A-Za-z0-9]+(-[A-Za-z0-9]+)+)";
+            const regex = new RegExp(regexString);
+            const matches = regex.exec(img.url);
+            let uuid = "";
+
+            img.uuid = {};
+            img.uuid.flag = 0;
+            if (matches[0] == "ephemeral-attachments") {
+                uuid = img.url.substring(img.url.indexOf(".png?") - 36, img.url.indexOf(".png?"));
+                img.uuid.flag = 64;
+            } else {
+                uuid = matches[0];
+            }
+
+            img.uuid.value = uuid
+            img.id = msgObj.message.id;
+
+            img.prompt = msgObjContent.substring(2, msgObjContent.lastIndexOf("**"));
+
+            // let prompt_msg = e.message.content.substring(2); // Remove first two characters **
+            //console.log("prompt_msg:", img.prompt);
         }
 
-        img.uuid.value = uuid
-        img.id = msgObj.message.id;
-        img.prompt = msgObj.message.content.substring(2, msgObj.message.content.lastIndexOf("**"));
-
-        // let prompt_msg = e.message.content.substring(2); // Remove first two characters **
-        //console.log("prompt_msg:", img.prompt);
-        let index = this._findItem(msgObj.message.content);
+        // if we're waiting to start or queued, we don't have an image yet, so we need to find the prompt
+        let index = this._findItem(msgObjContent);
         if (index == null) {
             return;
         }
 
-
+        // if we're waiting to start or queued, we don't have an image yet, we found the prompt, so call the callback and return
         let item = this.queue[index];
-        if (update) {
+        if (isUpdate || isWaitingToStart || isQueued) {
             if (item.cb !== null) {
-                let progress = this._getProgress(msgObj.message.content);
-                item.cb(img.url, progress);
+                let progress = this._getProgress(msgObjContent);
+                item.cb(img !== undefined ? img.url : null, progress);
             }
             return;
         } else {
@@ -188,7 +228,7 @@ class MidjourneyDiscordBridge {
                 obj.timeout = setTimeout(() => {
                     this.logger("Timeout waiting for Discord message (30 minutes)");
                     obj.resolve(null);
-                }, 1000 * 60 * ((this.timeout>=30)?this.timeout:30)); // 30 minute minimum timeout for x4 upscale
+                }, 1000 * 60 * ((this.timeout >= 30) ? this.timeout : 30)); // 30 minute minimum timeout for x4 upscale
             } else {
                 obj.resolve = resolve;
                 obj.timeout = setTimeout(() => {
@@ -358,7 +398,7 @@ class MidjourneyDiscordBridge {
         return ret;
     }
 
-    async upscaleImage(obj, imageNum, prompt, callback = null) {
+    async upscaleImage(obj, imageNum, prompt) {
         /**
          * Call for an upscaled image from the bot.
          * @param {object} obj - The object returned from generateImage
@@ -375,7 +415,7 @@ class MidjourneyDiscordBridge {
         this.logger("Upscaling image #" + imageNum + " from ", obj.uuid.value);
         const payload = this.buildPayload(3, "MJ::JOB::upsample::" + imageNum + "::" + obj.uuid.value, obj);
         this.sendPayload(payload);
-        let obj1 = { prompt: prompt, cb: callback };
+        let obj1 = { prompt: prompt, cb: null };
         this.queue.push(obj1);
         let ret = await this._waitForDiscordMsg(obj1);
         if (ret == null) {
@@ -525,7 +565,7 @@ class MidjourneyDiscordBridge {
                 attachments: []
             }
         };
-        
+
         this.sendPayload(payload);
 
         let obj1 = { prompt: prompt, cb: callback };
