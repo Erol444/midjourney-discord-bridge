@@ -148,6 +148,7 @@ class MidjourneyDiscordBridge {
                     msgObj.message.content.includes("Internal Error") ||
                     msgObj.message.content.includes("There was an error processing your request.") ||
                     msgObj.message.content.includes("Invalid Form Body")
+                    // TODO: Sorry! Could not complete the job!
                 ) && this.lastPayload != null) {
                 // check to see if this is a bad response to a payload we sent
                 if (this._findItem(msgObj.message.content) != null) {
