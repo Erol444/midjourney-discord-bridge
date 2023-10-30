@@ -69,7 +69,7 @@ class MidjourneyDiscordBridge {
      * @param {string} str The string from the Discord message that contains the progress indicator, percentage, "Waiting to start", or "Job queued"
      * @returns The progress indicator, percentage, "Waiting to start", or "Job queued" as a string
      */
-    _getProgress(str) {
+    async _getProgress(str) {
         // finds the progress indicator in the string
         const regex = /\((\d+)%\)/;
         const match = str.match(regex);
@@ -80,7 +80,7 @@ class MidjourneyDiscordBridge {
             if (str.includes("Midjourney bot is thinking")) return "Midjourney bot is thinking";
             if (str.includes("Job queued")) {
                 // In the case that the job is queued, we need to adjust the timeout  because it's going to take longer than normal
-                let index = this._findItem(str);
+                let index = await this._findItem(str);
                 clearTimeout(this.queue[index].timeout);
                 this.queue[index].timeout = setTimeout(() => {
                     this.logger("Timeout waiting for Discord message ("+this.timeout * 2+" minutes)");
@@ -98,13 +98,22 @@ class MidjourneyDiscordBridge {
      * @param {string} prompt 
      * @returns index of the item in the queue or null if not found
      */
-    _findItem(prompt) {
+    async _findItem(prompt) {
         for (let i = 0; i < this.queue.length; i++) {
             let str1 = this.queue[i].prompt;
             let str2 = prompt;
 
             // in case one of the strings isn't really a string, just return null
             if (typeof str1 !== "string" || typeof str2 !== "string") return null;
+
+            // if the prompt included a url, MJ will shorten it, so we need to replace the shortened url with the original url
+            if(str2.includes("https://s.mj.run/")){
+                let addr = str2.substring(3,str2.indexOf(" ") - 1);
+                let res = await fetch(addr);
+                let destUrl = await res.url;
+                str2 = str2.replace(addr, destUrl);
+                str1 = str1.replace(destUrl, "<" + destUrl + ">"); // add the <> around the url so it matches the Discord message markup
+            }
 
             // remove extra spaces, because either Discord or MJ is finding and removing extra spaces in the prompt string that comes back in the Discord message
             let regex = / +/g;
@@ -142,7 +151,7 @@ class MidjourneyDiscordBridge {
             if (msgObj.data.interaction != null) {
                 if (msgObj.data.interaction.name == "info") {
                     if(this.client.User.id != msgObj.data.interaction.user.id) return;
-                    let index = this._findItem("info");
+                    let index = await this._findItem("info");
                     let obj = this.queue[index];
                     if (obj == null) return;
                     if (obj.prompt != "info") return;
@@ -166,7 +175,7 @@ class MidjourneyDiscordBridge {
                     // TODO: Sorry! Could not complete the job!
                 ) && this.lastPayload != null) {
                 // check to see if this is a bad response to a payload we sent
-                if (this._findItem(msgObj.message.content) != null) {
+                if (await this._findItem(msgObj.message.content) != null) {
                     // wait for a bit then resend the payload
                     for (let i = 0; i < 3; i++) await this.waitTwoOrThreeSeconds();
                     this.sendPayload(this.lastPayload);
@@ -212,7 +221,7 @@ class MidjourneyDiscordBridge {
         }
 
         // if we're waiting to start or queued, we don't have an image yet, so we need to find the prompt
-        let index = this._findItem(msgObjContent);
+        let index = await this._findItem(msgObjContent);
         if (index == null) {
             return;
         }
@@ -221,7 +230,7 @@ class MidjourneyDiscordBridge {
         let item = this.queue[index];
         if (isUpdate || isWaitingToStart || isQueued) {
             if (item.cb !== null) {
-                let progress = this._getProgress(msgObjContent);
+                let progress = await this._getProgress(msgObjContent);
                 item.cb(img !== undefined ? img.url : null, progress);
             }
             return;
