@@ -1,6 +1,7 @@
 const axios = require("axios");
 const Discordie = require("discordie");
 const fs = require("fs");
+const {distance} = require('fastest-levenshtein')
 
 class MidjourneyDiscordBridge {
     /**
@@ -167,6 +168,31 @@ class MidjourneyDiscordBridge {
         let img = msgObj.message.attachments[0];
         let msgObjContent = "";
         if (img === undefined) {
+            const problemResponses = ["There was an error processing your request.", "Sorry! Could not complete the job!", "Bad response", "Internal Error"];
+            if(msgObj.message.embeds.length > 0){
+                let embeds = msgObj.message.embeds;
+                for(let i = 0; i < embeds.length; i++){
+                    for(let key in embeds[i]){
+                        const keyIsString = (typeof embeds[i][key] == "string");
+                        if(!keyIsString) continue;
+                        const containsProblemResponse = problemResponses.some(item => embeds[i][key].includes(item));
+                        const isCloseToProblemResponse = problemResponses.some(item => distance(item,embeds[i][key]) <= 2);
+                        const payloadIsNotNull = this.lastPayload != null;
+
+                        if(keyIsString && (containsProblemResponse || isCloseToProblemResponse) && payloadIsNotNull){
+                            for(let j = 0; j < 3; j++) await this.waitTwoOrThreeSeconds();
+                            this.sendPayload(this.lastPayload);
+                            return;
+                        }
+                        if(!payloadIsNotNull && keyIsString && (containsProblemResponse || isCloseToProblemResponse)){
+                            let ind = this._findItem(msgObj.message.content);
+                            if(ind != null){
+                                this.queue[ind].resolve(null);
+                            }
+                        }
+                    }
+                }
+            }
             if (
                 (msgObj.message.content.includes("Bad response") ||
                     msgObj.message.content.includes("Internal Error") ||
