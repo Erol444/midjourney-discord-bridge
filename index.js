@@ -139,6 +139,7 @@ class MidjourneyDiscordBridge {
             let str1 = this.queue[i].prompt;
             let regex = /show:[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}/g;
             let matches = str1.match(regex);
+            if (matches == null) continue;
             if (matches.length > 0) return true;
         }
         return false;
