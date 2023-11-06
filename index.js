@@ -1,7 +1,8 @@
 const axios = require("axios");
 const Discordie = require("discordie");
 const fs = require("fs");
-const {distance} = require('fastest-levenshtein')
+const { distance } = require('fastest-levenshtein');
+const { match } = require("assert");
 
 class MidjourneyDiscordBridge {
     /**
@@ -84,7 +85,7 @@ class MidjourneyDiscordBridge {
                 let index = await this._findItem(str);
                 clearTimeout(this.queue[index].timeout);
                 this.queue[index].timeout = setTimeout(() => {
-                    this.logger("Timeout waiting for Discord message ("+this.timeout * 2+" minutes)");
+                    this.logger("Timeout waiting for Discord message (" + this.timeout * 2 + " minutes)");
                     this.queue[index].resolve(null);
                 }, 1000 * 60 * this.timeout * 2); // set the timeout to double the normal timeout. This way if the job is queued, we'll wait for 20 minutes (default) instead of 10
                 return "Job Queued";
@@ -108,8 +109,8 @@ class MidjourneyDiscordBridge {
             if (typeof str1 !== "string" || typeof str2 !== "string") return null;
 
             // if the prompt included a url, MJ will shorten it, so we need to replace the shortened url with the original url
-            if(str2.includes("https://s.mj.run/")){
-                let addr = str2.substring(3,str2.indexOf(" ") - 1);
+            if (str2.includes("https://s.mj.run/")) {
+                let addr = str2.substring(3, str2.indexOf(" ") - 1);
                 let res = await fetch(addr);
                 let destUrl = await res.url;
                 str2 = str2.replace(addr, destUrl);
@@ -133,6 +134,16 @@ class MidjourneyDiscordBridge {
         return null;
     }
 
+    async _checkForUUIDinQueue() {
+        for (let i = 0; i < this.queue.length; i++) {
+            let str1 = this.queue[i].prompt;
+            let regex = /show:[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}/g;
+            let matches = str1.match(regex);
+            if (matches.length > 0) return true;
+        }
+        return false;
+    }
+
 
     /**
      * Handle a new message from Discord.
@@ -151,7 +162,7 @@ class MidjourneyDiscordBridge {
         if (msgObj.data != null) {
             if (msgObj.data.interaction != null) {
                 if (msgObj.data.interaction.name == "info") {
-                    if(this.client.User.id != msgObj.data.interaction.user.id) return;
+                    if (this.client.User.id != msgObj.data.interaction.user.id) return;
                     let index = await this._findItem("info");
                     let obj = this.queue[index];
                     if (obj == null) return;
@@ -163,30 +174,55 @@ class MidjourneyDiscordBridge {
                 }
             }
         }
+
+        if (await this._checkForUUIDinQueue()) {
+            if (msgObj.message.attachments.length == 0) return;
+            let img = msgObj.message.attachments[0];
+            let url = img.url;
+            let regex = /[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}/g;
+            let matches = url.match(regex);
+            if (matches.length == 0) return;
+            let urlUuid = matches[0];
+            let index = await this._findItem("show:" + urlUuid);
+            if (index != null) {
+                let obj = this.queue[index];
+                img.uuid = {};
+                img.uuid.flag = 0;
+                img.uuid.value = urlUuid;
+                img.id = msgObj.message.id;
+                img.prompt = msgObj.message.content.substring(2, msgObj.message.content.lastIndexOf("**"));
+                img.fullPrompt = msgObj.message.content;
+                obj.resolve(img);
+                clearTimeout(obj.timeout);
+                this.queue.splice(index, 1);
+                return;
+            }
+        }
+
         let isWaitingToStart = false;
         let isQueued = false;
         let img = msgObj.message.attachments[0];
         let msgObjContent = "";
         if (img === undefined) {
             const problemResponses = ["There was an error processing your request.", "Sorry! Could not complete the job!", "Bad response", "Internal Error"];
-            if(msgObj.message.embeds.length > 0){
+            if (msgObj.message.embeds.length > 0) {
                 let embeds = msgObj.message.embeds;
-                for(let i = 0; i < embeds.length; i++){
-                    for(let key in embeds[i]){
+                for (let i = 0; i < embeds.length; i++) {
+                    for (let key in embeds[i]) {
                         const keyIsString = (typeof embeds[i][key] == "string");
-                        if(!keyIsString) continue;
+                        if (!keyIsString) continue;
                         const containsProblemResponse = problemResponses.some(item => embeds[i][key].includes(item));
-                        const isCloseToProblemResponse = problemResponses.some(item => distance(item,embeds[i][key]) <= 2);
+                        const isCloseToProblemResponse = problemResponses.some(item => distance(item, embeds[i][key]) <= 2);
                         const payloadIsNotNull = this.lastPayload != null;
 
-                        if(keyIsString && (containsProblemResponse || isCloseToProblemResponse) && payloadIsNotNull){
-                            for(let j = 0; j < 3; j++) await this.waitTwoOrThreeSeconds();
+                        if (keyIsString && (containsProblemResponse || isCloseToProblemResponse) && payloadIsNotNull) {
+                            for (let j = 0; j < 3; j++) await this.waitTwoOrThreeSeconds();
                             this.sendPayload(this.lastPayload);
                             return;
                         }
-                        if(!payloadIsNotNull && keyIsString && (containsProblemResponse || isCloseToProblemResponse)){
+                        if (!payloadIsNotNull && keyIsString && (containsProblemResponse || isCloseToProblemResponse)) {
                             let ind = this._findItem(msgObj.message.content);
-                            if(ind != null){
+                            if (ind != null) {
                                 this.queue[ind].resolve(null);
                             }
                         }
@@ -274,10 +310,10 @@ class MidjourneyDiscordBridge {
             if (obj.isX4Upscale === true) {
                 obj.resolve = resolve;
                 obj.timeout = setTimeout(() => {
-                    this.logger("Timeout waiting for Discord message ("+((this.timeout >= 30) ? this.timeout : 30)+" minutes)");
+                    this.logger("Timeout waiting for Discord message (" + ((this.timeout >= 30) ? this.timeout : 30) + " minutes)");
                     obj.resolve(null);
                 }, 1000 * 60 * ((this.timeout >= 30) ? this.timeout : 30)); // 30 minute minimum timeout for x4 upscale
-            }else if(obj.isInfo === true){
+            } else if (obj.isInfo === true) {
                 obj.resolve = resolve;
                 obj.timeout = setTimeout(() => {
                     this.logger("Timeout waiting for Discord message (30 seconds)");
@@ -286,7 +322,7 @@ class MidjourneyDiscordBridge {
             } else {
                 obj.resolve = resolve;
                 obj.timeout = setTimeout(() => {
-                    this.logger("Timeout waiting for Discord message ("+this.timeout+" minutes)");
+                    this.logger("Timeout waiting for Discord message (" + this.timeout + " minutes)");
                     obj.resolve(null);
                 }, 1000 * 60 * this.timeout); // 10 minutes timeout by default
             }
@@ -316,7 +352,7 @@ class MidjourneyDiscordBridge {
      * @returns {object} - The payload object
      */
     buildPayload(type, custom_id, obj) {
-        
+
         const payload = {
             type: type,
             guild_id: this.GUILD_ID,
@@ -337,7 +373,7 @@ class MidjourneyDiscordBridge {
      * Cancel the current job.
     */
     async cancelJob() {
-        
+
         if (this.currentJobObj == null) {
             return;
         }
@@ -358,7 +394,7 @@ class MidjourneyDiscordBridge {
      * @returns {object} - The image object
      */
     async x4_upscale(obj, prompt, callback = null) {
-        
+
         this.currentJobObj = obj;
         if (!this.loggedIn) {
             await this.loginPromise;
@@ -387,7 +423,7 @@ class MidjourneyDiscordBridge {
      * @returns {object} - The image object
      */
     async variation(obj, selectedImage, prompt, callback = null) {
-        
+
         this.currentJobObj = obj;
         if (!this.loggedIn) {
             await this.loginPromise;
@@ -415,7 +451,7 @@ class MidjourneyDiscordBridge {
      * @returns {object} - The image object
      */
     async zoomOut(obj, prompt, callback = null) {
-        
+
         this.currentJobObj = obj;
         if (!this.loggedIn) {
             await this.loginPromise;
@@ -443,7 +479,7 @@ class MidjourneyDiscordBridge {
      * @returns {object} - The image object
      */
     async rerollImage(obj, prompt, callback = null) {
-        
+
         this.currentJobObj = obj;
         if (!this.loggedIn) {
             await this.loginPromise;
@@ -472,7 +508,7 @@ class MidjourneyDiscordBridge {
      * @returns {object} - The image object
      */
     async upscaleImage(obj, imageNum, prompt) {
-        
+
         this.currentJobObj = obj;
         this.logger("Waiting for a bit then calling for upscaled image...");
         await this.waitTwoOrThreeSeconds();
@@ -490,6 +526,60 @@ class MidjourneyDiscordBridge {
         }
         ret.prompt = prompt;
         return ret;
+    }
+
+    async showCommand(uuid, callback = null) {
+        if (!this.loggedIn) {
+            await this.loginPromise;
+        }
+        const payload = {
+            type: 2,
+            application_id: "936929561302675456",
+            guild_id: this.GUILD_ID,
+            channel_id: this.MIDJOURNEY_BOT_CHANNEL,
+            session_id: this.session_id,
+            data: {
+                version: "1169435442328911903",
+                id: "1169435442328911902",
+                name: "show",
+                type: 1,
+                options: [
+                    {
+                        type: 3,
+                        name: "job_id",
+                        value: uuid
+                    }
+                ],
+                application_command: {
+                    id: "1169435442328911902",
+                    application_id: "936929561302675456",
+                    version: "1169435442328911903",
+                    default_member_permissions: null,
+                    type: 1,
+                    nsfw: false,
+                    name: "show",
+                    description: "Shows the job view based on job id.",
+                    dm_permission: true,
+                    contexts: null,
+                    integration_types: [
+                        0
+                    ],
+                    options: [
+                        {
+                            type: 3,
+                            name: "job_id",
+                            description: "The job ID of the job you want to show. It should look similar to this:…",
+                            required: true
+                        }
+                    ]
+                },
+                attachments: []
+            }
+        };
+        this.sendPayload(payload);
+        let obj1 = { prompt: "show:" + uuid, cb: callback };
+        this.queue.push(obj1);
+        return await this._waitForDiscordMsg(obj1);
     }
 
     /**
@@ -541,7 +631,7 @@ class MidjourneyDiscordBridge {
      * @param {object} payload - The payload to send to Discord
      */
     async sendPayload(payload) {
-        
+
         if (!this.loggedIn) {
             await this.loginPromise;
         }
@@ -585,7 +675,7 @@ class MidjourneyDiscordBridge {
      * @returns {object} - The image object
      */
     async generateImage(prompt, callback = null) {
-        
+
         if (!this.loggedIn) {
             await this.loginPromise;
         }
