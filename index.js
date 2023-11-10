@@ -43,8 +43,8 @@ class MidjourneyDiscordBridge {
             const content = e.message.content;
             const channel = e.message.channel;
             if (content === "ping") channel.sendMessage("pong");
-            if (content === "do") doCommand(e);
-            if (content === "undo") undoCommand(e);
+            // if (content === "do") doCommand(e);
+            // if (content === "undo") undoCommand(e);
             this._newDiscordMsg(e, false);
         });
 
