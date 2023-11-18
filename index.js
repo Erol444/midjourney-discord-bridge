@@ -47,7 +47,7 @@ class MidjourneyDiscordBridge {
             // if (content === "undo") undoCommand(e);
             this._newDiscordMsg(e, false);
         });
-        
+
         this.client.Dispatcher.on("MESSAGE_UPDATE", (e) => this._newDiscordMsg(e, true));
 
         this.client.Dispatcher.on(Events.GATEWAY_READY, e => {
@@ -64,6 +64,10 @@ class MidjourneyDiscordBridge {
         this.client.Dispatcher.on(Events.GATEWAY_DISCONNECT, (e) => {
             if (this.disconnectResolver != null) this.disconnectResolver();
         });
+    }
+
+    setTimeout(timeout) {
+        this.timeout = timeout;
     }
 
     /**
