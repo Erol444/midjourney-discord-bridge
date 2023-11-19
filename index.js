@@ -42,8 +42,6 @@ class MidjourneyDiscordBridge {
             const content = e.message.content;
             const channel = e.message.channel;
             if (content === "ping") channel.sendMessage("pong");
-            // if (content === "do") doCommand(e);
-            // if (content === "undo") undoCommand(e);
             this._newDiscordMsg(e, false);
         });
 
@@ -107,10 +105,7 @@ class MidjourneyDiscordBridge {
         for (let i = 0; i < this.queue.length; i++) {
             let str1 = this.queue[i].prompt;
             let str2 = prompt;
-            // console.log("str1: " + str1);
-            // console.log("str2: " + str2);
 
-            // in case one of the strings isn't really a string, just return null
             if (typeof str1 !== "string" || typeof str2 !== "string") return null;
 
             // if the prompt included a url, MJ will shorten it, so we need to replace the shortened url with the original url
@@ -132,9 +127,16 @@ class MidjourneyDiscordBridge {
             if (matches != null) {
                 str2 = str2.replace(regex, " ");
             }
-            // console.log("str1: " + str1);
-            // console.log("str2: " + str2);
-            // if the prompt is an exact match, return the index
+
+            regex = / ::/g;
+            matches = str1.match(regex);
+            if (matches != null) {
+                str1 = str1.replace(regex, "::");
+            }
+            matches = str2.match(regex);
+            if (matches != null) {
+                str2 = str2.replace(regex, "::");
+            }
             if (str2.includes(str1)) return i;
         }
         return null;
@@ -166,8 +168,6 @@ class MidjourneyDiscordBridge {
         if (msgObj.message.attachments === undefined) return;
         if (msgObj.message.author == null) return;
         if (msgObj.message.author.id != this.MIDJOURNEY_BOT_ID) return;
-        // append the message to a file for debugging
-        fs.appendFileSync("discord_messages2.txt", JSON.stringify(msgObj, null, 4) + "\n\n");
         if (msgObj.data != null) {
             if (msgObj.data.interaction != null) {
                 if (msgObj.data.interaction.name == "info") {
@@ -271,8 +271,6 @@ class MidjourneyDiscordBridge {
         }
 
         if (!isWaitingToStart && !isQueued && img !== undefined) {
-            console.log(JSON.stringify(img,null,4));
-            console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
             const regexString = "([A-Za-z0-9]+(-[A-Za-z0-9]+)+)";
             const regex = new RegExp(regexString);
             const matches = regex.exec(img.url);
@@ -294,7 +292,6 @@ class MidjourneyDiscordBridge {
         }
 
         let index = await this._findItem(msgObjContent);
-        console.log("index: " + index);
         if (index == null) {
             return;
         }
