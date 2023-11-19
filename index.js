@@ -2,7 +2,6 @@ const axios = require("axios");
 const Discordie = require("discordie");
 const fs = require("fs");
 const { distance } = require('fastest-levenshtein');
-const { match } = require("assert");
 
 class MidjourneyDiscordBridge {
     /**
@@ -108,6 +107,8 @@ class MidjourneyDiscordBridge {
         for (let i = 0; i < this.queue.length; i++) {
             let str1 = this.queue[i].prompt;
             let str2 = prompt;
+            // console.log("str1: " + str1);
+            // console.log("str2: " + str2);
 
             // in case one of the strings isn't really a string, just return null
             if (typeof str1 !== "string" || typeof str2 !== "string") return null;
@@ -131,7 +132,8 @@ class MidjourneyDiscordBridge {
             if (matches != null) {
                 str2 = str2.replace(regex, " ");
             }
-
+            // console.log("str1: " + str1);
+            // console.log("str2: " + str2);
             // if the prompt is an exact match, return the index
             if (str2.includes(str1)) return i;
         }
@@ -164,6 +166,8 @@ class MidjourneyDiscordBridge {
         if (msgObj.message.attachments === undefined) return;
         if (msgObj.message.author == null) return;
         if (msgObj.message.author.id != this.MIDJOURNEY_BOT_ID) return;
+        // append the message to a file for debugging
+        fs.appendFileSync("discord_messages2.txt", JSON.stringify(msgObj, null, 4) + "\n\n");
         if (msgObj.data != null) {
             if (msgObj.data.interaction != null) {
                 if (msgObj.data.interaction.name == "info") {
@@ -207,6 +211,7 @@ class MidjourneyDiscordBridge {
         let isWaitingToStart = false;
         let isQueued = false;
         let img = msgObj.message.attachments[0];
+        
         let msgObjContent = "";
         if (img === undefined) {
             const problemResponses = ["There was an error processing your request.", "Sorry! Could not complete the job!", "Bad response", "Internal Error"];
@@ -265,8 +270,9 @@ class MidjourneyDiscordBridge {
             msgObjContent = msgObj.message.content;
         }
 
-        // if we're waiting to start or queued, we don't have an image yet, so we need to find the prompt
         if (!isWaitingToStart && !isQueued && img !== undefined) {
+            console.log(JSON.stringify(img,null,4));
+            console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
             const regexString = "([A-Za-z0-9]+(-[A-Za-z0-9]+)+)";
             const regex = new RegExp(regexString);
             const matches = regex.exec(img.url);
@@ -287,8 +293,8 @@ class MidjourneyDiscordBridge {
             img.prompt = msgObjContent.substring(2, msgObjContent.lastIndexOf("**"));
         }
 
-        // if we're waiting to start or queued, we don't have an image yet, so we need to find the prompt
         let index = await this._findItem(msgObjContent);
+        console.log("index: " + index);
         if (index == null) {
             return;
         }
