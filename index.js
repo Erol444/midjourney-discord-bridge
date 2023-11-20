@@ -127,6 +127,7 @@ class MidjourneyDiscordBridge {
             if (matches != null) {
                 str2 = str2.replace(regex, " ");
             }
+            if (str2.includes(str1)) return i;
 
             regex = / ::/g;
             matches = str1.match(regex);
@@ -211,7 +212,7 @@ class MidjourneyDiscordBridge {
         let isWaitingToStart = false;
         let isQueued = false;
         let img = msgObj.message.attachments[0];
-        
+
         let msgObjContent = "";
         if (img === undefined) {
             const problemResponses = ["There was an error processing your request.", "Sorry! Could not complete the job!", "Bad response", "Internal Error"];
