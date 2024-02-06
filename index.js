@@ -215,7 +215,7 @@ class MidjourneyDiscordBridge {
 
         let msgObjContent = "";
         if (img === undefined) {
-            const problemResponses = ["There was an error processing your request.", "Sorry! Could not complete the job!", "Bad response", "Internal Error"];
+            const problemResponses = ["There was an error processing your request.", "Sorry! Could not complete the job!", "Bad response", "Internal Error", "Not job owner"];
             if (msgObj.message.embeds.length > 0) {
                 let embeds = msgObj.message.embeds;
                 for (let i = 0; i < embeds.length; i++) {
