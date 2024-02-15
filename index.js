@@ -169,6 +169,7 @@ class MidjourneyDiscordBridge {
         if (msgObj.message.attachments === undefined) return;
         if (msgObj.message.author == null) return;
         if (msgObj.message.author.id != this.MIDJOURNEY_BOT_ID) return;
+        // console.log(JSON.stringify(msgObj, null, 2));
         if (msgObj.data != null) {
             if (msgObj.data.interaction != null) {
                 if (msgObj.data.interaction.name == "info") {
@@ -193,7 +194,7 @@ class MidjourneyDiscordBridge {
             let matches = url.match(regex);
             if (matches.length == 0) return;
             let urlUuid = matches[0];
-            let index = await this._findItem("show:" + urlUuid);
+            let index = await this._findItem("show" + urlUuid);
             if (index != null) {
                 let obj = this.queue[index];
                 img.uuid = {};
@@ -232,9 +233,17 @@ class MidjourneyDiscordBridge {
                             return;
                         }
                         if (!payloadIsNotNull && keyIsString && (containsProblemResponse || isCloseToProblemResponse)) {
-                            let ind = this._findItem(msgObj.message.content);
-                            if (ind != null) {
-                                this.queue[ind].resolve(null);
+                            if(embeds[i][key].includes("Not job owner")) {
+                                let findString = embeds[i].footer.text.replace(/[\/ ]/g,"");
+                                let ind = this._findItem(findString);
+                                if (ind != null) {
+                                    this.queue[ind].resolve(null);
+                                }
+                            }else{
+                                let ind = this._findItem(msgObj.message.content);
+                                if (ind != null) {
+                                    this.queue[ind].resolve(null);
+                                }
                             }
                         }
                     }
@@ -440,7 +449,7 @@ class MidjourneyDiscordBridge {
         this.logger("Waiting for a bit then calling variation...");
         await this.waitTwoOrThreeSeconds();
         this.logger("Variation image:", obj.uuid.value);
-        const payload = this.buildPayload(3, "MJ::JOB::variation::" + selectedImage + "::" + obj.uuid.value, obj);
+        const payload = this.buildPayload(3, "MJ::JOB::high_variation::" + selectedImage + "::" + obj.uuid.value, obj);
         this.sendPayload(payload);
         let obj1 = { prompt: prompt, cb: callback };
         this.queue.push(obj1);
@@ -450,6 +459,36 @@ class MidjourneyDiscordBridge {
         }
         ret.prompt = prompt;
         return ret;
+    }
+
+    async variation_uuid(uuid, selectedImage, prompt, callback = null) {
+        if (!this.loggedIn) {
+            await this.loginPromise;
+        }
+        this.logger("Waiting for a bit then calling variation...");
+        await this.waitTwoOrThreeSeconds();
+        this.logger("Variation image:", uuid);
+        const payload = this.buildPayload(3, "MJ::JOB::high_variation::" + selectedImage + "::" + uuid +"::SOLO", {uuid: {flag: 0 }, id: "1204234289361985586"});
+        this.sendPayload(payload);
+        let obj1 = { prompt: prompt, cb: callback };
+        this.queue.push(obj1);
+        let ret = await this._waitForDiscordMsg(obj1);
+        if (ret == null) {
+            return null;
+        }
+        ret.prompt = prompt;
+        return ret;
+    }
+
+    async panLeftCommand(uuid, selectedImage, callback = null) {
+        if (!this.loggedIn) {
+            await this.loginPromise;
+        }
+        const payload = this.buildPayload(3, "MJ::JOB::pan_left::" + selectedImage + "::" + uuid + "::SOLO", {uuid: {flag: 0 }, id: "1204234289361985586"});
+        this.sendPayload(payload);
+        let obj1 = { prompt: "pan" + uuid, cb: callback };
+        this.queue.push(obj1);
+        return await this._waitForDiscordMsg(obj1);
     }
 
     /**
@@ -586,7 +625,7 @@ class MidjourneyDiscordBridge {
             }
         };
         this.sendPayload(payload);
-        let obj1 = { prompt: "show:" + uuid, cb: callback };
+        let obj1 = { prompt: "show" + uuid, cb: callback };
         this.queue.push(obj1);
         return await this._waitForDiscordMsg(obj1);
     }
