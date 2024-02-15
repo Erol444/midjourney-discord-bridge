@@ -1,0 +1,6 @@
+{
+    "cSpell.words": [
+        "Paylod"
+    ],
+    "window.title": "${dirty}${rootName}${separator}${profileName}${separator}${appName}"
+}
